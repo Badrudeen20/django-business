@@ -1,0 +1,173 @@
+
+{% extends "master/layout/admin.html" %}
+
+
+{% block content %}
+<div class="container d-flex justify-content-center">
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.css" />
+<!-- <style>
+    .bootstrap-select{
+        width: 100%!important;
+        margin-bottom: 20px!important;
+    }
+</style> -->
+<!-- <link rel="stylesheet" href= "https://cdnjs.cloudflare.com/ajax/libs/chosen/1.4.2/chosen.min.css" />  -->
+<!-- <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.1/css/select2.min.css" />  -->
+<div class="container mt-2">
+    
+    <div class="row">
+        <div class="col-12">
+            <table id="customer_table"  class="display" style="width:100%">
+                <thead>
+                    <tr>
+                        <th>Id</th>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+
+            </table>
+        </div>
+
+      </div>
+  
+</div>
+
+
+
+
+
+<!-- Role -->
+<div class="modal fade" id="RoleModal" tabindex="-1" role="dialog" aria-labelledby="RoleModal" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <form class="modal-content" method="post" id="RoleForm">
+        {% csrf_token %}
+            <div class="modal-header">
+            <h5 class="modal-title" id="RoleModalTitle">Modal Role</h5>
+                
+            </div>
+            <div class="modal-body" id="role-field">
+
+            </div>
+            <div class="modal-footer">
+                <button type="submit" class="btn btn-primary">Submit</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.js"></script>
+<!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/chosen/1.8.7/chosen.jquery.min.js"> </script>  -->
+<!-- <script src= "https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.1/js/select2.min.js"> </script>     -->
+<script>
+    const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    $(document).ready( function () {
+        loadData()
+    })
+
+
+    function loadData(){
+        $('table.display').DataTable({
+            "processing" : true,
+			"serverSide" : true,
+            pageLength : 25,
+            ajax: function (data, callback, settings) {
+                var api = this.api();
+                var search = api.search() 
+                var pageInfo = api.page.info();
+                pgno = pageInfo.page+1;
+                
+                $.ajax({
+                    url: "{{ settings.BASE_URL }}",
+                    method:"PUT",
+                    headers: {'X-CSRFToken': csrftoken},
+                    data:JSON.stringify({start:pgno, length:25,search:search})
+                }).then ( function( json, textStatus, jqXHR ) {
+                    if(json.success1){
+                        let html =`
+                        <input type="hidden" name="customer"  />
+                        <table class="table table-bordered">
+                        <thead>
+                            <tr>
+                            <th scope="col">#</th>
+                            <th scope="col">Role</th>
+                            <th scope="col">Permission</th>
+                            <th scope="col">Assion</th>
+                            </tr>
+                        </thead>
+                        <tbody id="role-body">`
+            
+                        /*
+                        json.action?.forEach((ele,idx)=>{
+                            html +=`<tr>
+                                    <th scope="row">${++idx}</th>
+                                    <td>${ele.role}</td>
+                                    <td><input type="checkbox" name="${ele.role}" value="${ele.id}" class="form-check-input" /></td>
+                                    <td><input type="checkbox" name="assign${ele.role}" value="1" class="form-check-input" /></td>
+                                    </tr>`
+                        })
+                        */
+                        // html +=`</tbody>
+                        // </table>`
+                        // $('#role-field').html(html)
+                    }
+                    callback(json);
+                });
+            },
+            // pageLength: 10,
+            columns: [
+                { data: "id" },
+                { data: "name" },
+                { data: "email" },
+                { data: "action" },
+                
+            ],
+         
+        });
+    }
+    
+    function openModal(role=[],userId){
+        $(`input[name=customer]`).val(userId)
+        let html = ''
+        role?.forEach(function(ele,idx){
+            html+=`<tr>
+                    <th scope="row">${++idx}</th>
+                    <td>${ele.role}</td>
+                    <td><input type="checkbox" name="${ele.role}" value="${ele.role_id}" ${ele.check ? 'checked': ''} class="form-check-input" /></td>
+                    <td><input type="checkbox" name="assign${ele.role}" value="1" ${ele.assign ? 'checked': ''}  class="form-check-input" /></td>
+                </tr>`
+        })
+        $('#role-body').html(html)
+        $('#RoleModal').modal('show')
+    }
+
+    $(document).on('submit', '#RoleForm', function(e) {
+        e.preventDefault()
+        const formData = Object.fromEntries($(this).serializeArray().map(x => [x.name, x.value]));
+        // formData.customer = 'customValue';
+        $.ajax({
+            url: '{{ settings.BASE_URL }}', // Replace with your server endpoint
+            method: 'PUT',
+            data: JSON.stringify(formData),
+            headers: {'X-CSRFToken': csrftoken},
+            contentType: 'application/json',
+            success: function(response) {
+                if(response.status){
+                    $('#RoleModal').modal('hide');
+                    $('table.display').DataTable().clear().destroy();
+                    loadData()
+                }
+               
+            },
+            error: function(xhr) {
+                console.error('Error submitting form:', xhr.responseText);
+            }
+        });
+    })
+
+
+
+</script>
+
+{% endblock %}

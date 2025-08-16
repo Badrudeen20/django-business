@@ -1,0 +1,293 @@
+{% extends "user/layout/movie.html" %}
+{% load custom_tags %}
+
+{% block content %}
+
+   <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.css" />
+   <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.dataTables.min.css">
+   <link href="https://cdn.jsdelivr.net/npm/nouislider@15.6.0/dist/nouislider.min.css" rel="stylesheet">
+   <!-- <link rel="stylesheet" href="https://cdn.datatables.net/2.2.2/css/dataTables.dataTables.css" />
+   <link rel="stylesheet" href="https://cdn.datatables.net/buttons/3.2.2/css/buttons.dataTables.css" /> -->
+   <style>
+    .card-block {
+        font-size: 1em;
+        position: relative;
+        margin: 0;
+        padding: 1em;
+        border: none;
+        border-top: 1px solid rgba(34, 36, 38, .1);
+        box-shadow: none;
+        
+    }
+    .dataTables_filter{
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+    }
+    .dataTables_filter > button{
+      height: 35px;
+    }
+   </style>
+    <div class="container-fluid">
+       <div class="row">
+          <div class="col-md-12 col-sm-12 col-lg-8 ">
+            <table id="customer_table"   class="display" style="width:100%">
+              <tbody class="row">
+    
+              </tbody>
+            </table>
+          </div>
+      
+
+          <div class="col-md-12 col-sm-12 col-lg-4">
+              <div class="container">
+                <div class="row" id="trands">
+                  
+                  {% for t in Trands %}
+                    <div class="col-md-6 col-sm-12 col-lg-12">
+                      <div class="card float-left my-2">
+                        <div class="row ">
+
+                          {% if forloop.counter|divisibleby:2 %}
+                              <div class="col-7 ">
+                                <div class="card-block">  
+                                  {% if t.post.type == 2 %}                        
+                                    <a class="card-text" href="{{baseUrl}}movieplanet/{{t.post.name|plusify}}">{{t.post.name}}</a>
+                                  {% else %}
+                                    <a class="card-text" href="{{baseUrl}}movieplanet/detail/{{t.post.name|plusify}}">{{t.post.name}}</a>
+                                  {% endif %}
+                                </div>
+                              </div>
+                              <div class="col-5">
+                                <img class="d-block w-100" src="{{t.post.image}}" alt="">
+                              </div>
+                          {% else %}
+                              <div class="col-5">
+                                <img class="d-block w-100" src="{{t.post.image}}" alt="">
+                              </div>
+                              <div class="col-7">
+                                <div class="card-block">
+                                  {% if t.post.type == 2 %}                        
+                                    <a class="card-text" href="{{baseUrl}}movieplanet/{{t.post.name|plusify}}">{{t.post.name}}</a>
+                                  {% else %}
+                                    <a class="card-text" href="{{baseUrl}}movieplanet/detail/{{t.post.name|plusify}}">{{t.post.name}}</a>
+                                  {% endif %}
+                                   
+                                </div>
+                              </div> 
+                          {% endif %}     
+                        </div>
+                      </div>
+                    </div>
+                  {% endfor %}
+                 
+
+             
+                </div>
+                 
+                
+                  
+                  
+              </div>
+                  
+          </div>
+       </div>
+        
+ 
+    </div>
+   
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/nouislider@15.6.0/dist/nouislider.min.js"></script>
+<!-- <script src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script> -->
+<!-- <script src="https://cdn.datatables.net/2.2.2/js/dataTables.js"></script>
+<script src="https://cdn.datatables.net/buttons/3.2.2/js/dataTables.buttons.js"></script>
+<script src="https://cdn.datatables.net/buttons/3.2.2/js/buttons.dataTables.js"></script> -->
+<script>
+   
+    $(document).ready( function () {
+      loadData()
+      
+    })
+    function loadData(){
+      var pgno = 0;
+      const years = "{{request.GET.years}}"
+      const rates = "{{request.GET.rates}}"
+      const genres = "{{request.GET.genres}}"
+      $('table.display').DataTable({
+            "processing" : true,
+		        "serverSide" : true,
+            "lengthChange": false,
+            "pageLength" : 20,
+            "oSearch": {"sSearch": "{{request.GET.search}}" },
+            "displayStart":("{{request.GET.page}}") ?(4*"{{request.GET.page}}")-4 : 0,
+            "ordering": false,
+            "language": {
+                "search": ""  // This removes the "Search:" label
+            },
+            createdRow:function(row, data, dataIndex){
+              let url = baseUrl+"/detail/"+data.name.split(' ').join('+')
+              if(data.type=="2"){
+                url = baseUrl+"/"+data.name.split(' ').join('+')
+              }
+              let card  = `<article class="card animated fadeInLeft">
+                            <img class="card-img-top img-responsive" src="${data.image}" alt="Deer in nature" />
+                            <div class="card-body">
+                              <a class="card-text" href="${url}">${data.name}</a>
+                            </div>
+                          </article>`
+              $(row).addClass('col-xl-4 col-sm-6 col-xs-6 col-md-6 col-6  my-2 border-0');
+              $(row).html(card);
+            },
+            ajax: function (data, callback, settings) {
+                var api = this.api();
+                var search =  api.search() 
+                var pageInfo = api.page.info();
+                pgno =  pageInfo.page+1;
+                let param = '?page='+pgno
+
+                if(search){
+                  param +='&search='+search
+                }
+                if(years){
+                  param +='&years='+years
+                }
+                if(rates){
+                  param +='&rates='+rates
+                }
+                if(genres){
+                  param +='&genres='+genres
+                }
+                window.history.replaceState(null, null, param);
+                $.ajax({
+                    url: "{{ settings.BASE_URL }}",
+                    method:"POST",
+                    headers: {'Content-Type': 'application/json'},
+                    data:JSON.stringify({
+                        start: pgno,
+                        length: 20,
+                        search: search
+                    })
+                }).then ( function( json, textStatus, jqXHR ) {
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    callback(json);
+                });
+            },
+            // pageLength: 10,
+            columns: [
+                { data: "image" },
+                { data: "name" },
+                { data: "rate" },  
+            ],
+            initComplete: function () {
+                let genre = (genres) ? genres.split(',').map(item => item.trim()) : []
+                let customBtn = `<div>
+                                      <button class="btn btn-info dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                        Filter <i class="fa fa-filter me-1"></i> 
+                                      </button>
+                                      <ul class="dropdown-menu" id="filter-menu">
+                                        <li>
+                                        <div class="dropdown-item">
+                                          <label for="year">Year</label> 
+                                          <div id="year-slider"></div>
+                                        </div>
+                                        </li>
+                                        <li>
+                                          <div class="dropdown-item">
+                                            <label for="genres">Genres</label> 
+                                        `
+                let genreList = ['Horror','Action','Sci-fi'];
+                genreList.forEach(function(item){
+                    
+                    customBtn+=`<div>
+                                  <input type="checkbox" name="genres[]" ${(genre.includes(item)) ? 'checked' : ''} value="${item}"/>
+                                  <label>${item}</label>
+                                </div>`
+                })
+
+                customBtn+=`
+                           </div>   
+                          </li>
+                          <li>
+                            <div class="dropdown-item">
+                              <label for="rate">Rating</label> 
+                              <div id="rate-slider"></div>
+                            </div>
+                            </li>
+                            <li class="d-flex justify-content-center p-2">
+                              <button class="btn btn-sm btn-success w-100" id="filter-apply" type="button">
+                                Apply filter
+                              </button> 
+                            </li>
+                          </ul>
+                          
+                        </div>`;
+                $('.dataTables_filter').prepend(customBtn);
+
+                const $dropdown = $('#filter-menu');
+                $dropdown.on('click', function (e) {
+                    e.stopPropagation();
+                });
+                
+                
+                var currentYear = new Date().getFullYear();
+                var yearSlider = document.getElementById('year-slider');
+                let yearVal = (years) ? years.split(',').map(Number) : [2000,currentYear]
+                noUiSlider.create(yearSlider, {
+                    start: yearVal,  // Initial values for both sides (start from 1950 to current year)
+                    connect: true,  // Makes the area between the two handles a connected range
+                    range: {
+                        'min': 1950,  // Minimum value is 1950
+                        'max': currentYear   // Maximum value is the current year
+                    },
+                    step: 1,  // Step size (change by 1 year each time)
+                    tooltips: true,  // Display tooltips on both handles
+                    format: {
+                        to: function (value) {
+                            return Math.round(value);  // Round the value to the nearest integer
+                        },
+                        from: function (value) {
+                            return value;
+                        }
+                    }
+                });
+
+                var rateSlider = document.getElementById('rate-slider');
+                let rateVal = (rates) ? rates.split(',').map(Number) : [3,8]
+                noUiSlider.create(rateSlider, {
+                    start: rateVal,  // Initial values for both sides (start from 1950 to current year)
+                    connect: true,  // Makes the area between the two handles a connected range
+                    range: {
+                        'min': 1,  // Minimum value is 1950
+                        'max': 10   // Maximum value is the current year
+                    },
+                    step: 1,  // Step size (change by 1 year each time)
+                    tooltips: true,  // Display tooltips on both handles
+                    format: {
+                        to: function (value) {
+                            return Math.round(value);  // Round the value to the nearest integer
+                        },
+                        from: function (value) {
+                            return value;
+                        }
+                    }
+                });
+                
+                $('#filter-apply').click(function(){
+                  let genres = $('input[name="genres[]"]:checked').map(function () {
+                      return this.value;
+                  }).get();
+                  window.location.href = baseUrl+'?years='+yearSlider.noUiSlider.get()+'&rates='+rateSlider.noUiSlider.get()+'&genres='+genres
+                 
+                })
+
+            }
+
+            
+        });
+        
+    }
+     
+
+</script>
+
+{% endblock %}

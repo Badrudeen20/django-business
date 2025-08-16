@@ -1,0 +1,193 @@
+
+{% extends "master/layout/admin.html" %}
+
+
+{% block content %}
+<div class="container d-flex justify-content-center">
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.css" />
+<link rel="stylesheet" type="text/css" href="https://common.olemiss.edu/_js/sweet-alert/sweet-alert.css">
+<style>
+.dropdown-menu-cos.show {
+    display: block;
+
+}
+.dropdown-menu{
+    min-width: 100%;
+    padding: 0 0;
+    
+}
+
+.form-select {
+    display: block;
+    padding: .375rem 2.25rem .375rem .75rem;
+    -moz-padding-start: calc(0.75rem - 3px);
+    font-size: 1rem;
+    font-weight: 400;
+    line-height: 1.5;
+    color: #212529;
+    background-color: #fff;
+    background-repeat: no-repeat;
+    background-position: right .75rem center;
+    background-size: 16px 12px;
+    border: none;
+    transition: border-color .15s ease-in-out, box-shadow .15s ease-in-out;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+}
+</style>
+<div class="container mt-2">
+    
+    <div class="action d-flex justify-content-between">
+        <div>{{action.add|safe }}</div>
+        <div>{{action.excel|safe }}</div>
+        
+    </div>
+    <div class="row">
+        <div class="col-12">
+            <table id="customer_table"  class="display " style="width:100%;">
+                <thead>
+                    <tr>
+                        <th class="d-flex justify-content-between"><span>Id</span> <input type="checkbox" name="tickall" value="tick" /></th>
+                        <th>Name</th>
+                        <!-- <th>Image</th> -->
+                        <th>Trand</th>
+                        <th>Rate</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+
+            </table>
+        </div>
+
+      </div>
+  
+</div>
+
+
+
+<!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.0/jquery.min.js"></script> -->
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.js"></script>
+<script src="https://common.olemiss.edu/_js/sweet-alert/sweet-alert.min.js"></script>
+
+<script>
+    const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    $(document).ready( function () {
+        loadData()
+    })
+    function loadData(){
+        var pgno = 0;
+        $('table.display').DataTable({
+            "processing" : true,
+			"serverSide" : true,
+            "ordering"   : false,
+            "pageLength" : 25,
+           
+            ajax: function (data, callback, settings) {
+                var api = this.api();
+                var search = api.search() 
+                var pageInfo = api.page.info();
+                pgno = pageInfo.page+1;
+                let items = []
+                $('.item').each(function(item){
+                    items.push({id:$(this).val(),check:$(this).prop('checked')})
+                })
+                $.ajax({
+                    url: "{{ settings.BASE_URL }}",
+                    method:"PUT",
+                    headers: {'X-CSRFToken': csrftoken},
+                    data: JSON.stringify({
+                        start: pgno,
+                        length: 25,
+                        search: search,
+                        tickall: $('input[name=tickall]').prop('checked'),
+                        status:$('select[name="status"]').val(),
+                        trand:$('select[name="trand"]').val(),
+                        item:items
+                    }),
+                }).then ( function( json, textStatus, jqXHR ) {
+                    if(json.success){
+                       callback(json);
+                       $('select[name=status]').val('');
+                    }
+                    
+                });
+            },
+            dom: '<"row mb-2"<"col-sm-6"l><"col-sm-6 d-flex justify-content-end filter-container"f>>' +
+            '<"row"<"col-sm-12"tr>>' +
+            '<"row mt-2"<"col-sm-5"i><"col-sm-7"p>>',
+            initComplete: function(data) {
+                if(data.json.success){
+                    $(".filter-container").prepend($(`${data.json.action.status}`));
+                }
+
+            },
+            columns: [
+                { data: "id" },
+                { data: "name" },
+                { data: "trand" },
+                { data: "rate" },
+                { data: "status" },
+                { data: "action" },
+                
+            ],
+         
+        });
+    }
+
+    $(document).on('change', '#status-update', function() {
+        $('table.display').DataTable().ajax.reload();
+    });
+    $(document).on('change', '#trand-update', function() {
+        $('table.display').DataTable().ajax.reload();
+    });
+
+    $('input[name=tickall]').change(function(){
+        
+        $('table.display').DataTable().ajax.reload();
+    })
+   
+
+    function deleteModal(id){
+        swal({
+            title: "Are you sure?",
+            text: "You will not be able to recover this file!",
+            type: "warning",
+            showCancelButton: true,
+            confirmButtonColor: "#DD6B55",
+            confirmButtonText: "Yes, delete it!",
+            cancelButtonText: "No, cancel plx!",
+            closeOnConfirm: false,
+            closeOnCancel: false
+        },function(isConfirm){
+            if (isConfirm) {
+                $.ajax({
+                    url: '{{ settings.BASE_URL }}', // Replace with your server endpoint
+                    method: 'PATCH',
+                    data: JSON.stringify({id:id}),
+                    headers: {'X-CSRFToken': csrftoken},
+                    contentType: 'application/json',
+                    success: function(response) {
+                        console.log(response)
+                        if(response.status){
+                            $('table.display').DataTable().clear().destroy();
+                            loadData()
+                        }
+                    },
+                    error: function(xhr) {
+                        console.error('Error submitting form:', xhr.responseText);
+                    }
+                }); 
+                //swal("Deleted!", "Your imaginary file has been deleted.", "success");
+
+            } else {
+                //swal("Cancelled", "Your imaginary file is safe :)", "error");
+            }
+            swal.close();
+        });
+    }
+
+</script>
+
+{% endblock %}
