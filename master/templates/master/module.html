@@ -95,7 +95,6 @@
                     url: '{{ settings.BASE_URL }}', // Replace with your server endpoint
                     method: 'PATCH',
                     data: JSON.stringify({id:id}),
-                    headers: {'X-CSRFToken': csrftoken},
                     contentType: 'application/json',
                     success: function(response) {
                         console.log(response)

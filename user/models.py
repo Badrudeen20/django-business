@@ -21,16 +21,11 @@ class Posts(models.Model):
     status = models.CharField(max_length=100)
     starcast=models.TextField()
     menu=models.TextField(null=True, blank=True)
-    trand = models.IntegerField(max_length=100,default=0)
+    trand = models.IntegerField(default=0)
     release_date=models.DateField(null=True, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField(auto_now_add=True,null=True,blank=True)
+    updated_at = models.DateTimeField(auto_now=True,null=True,blank=True)
     
-# class Trand(models.Model):
-#     post = models.ForeignKey(Posts,related_name="trands", on_delete=models.CASCADE)
-#     status = models.CharField(max_length=100)
-#     created_at = models.DateTimeField(auto_now_add=True)
-#     updated_at = models.DateTimeField(auto_now=True)
 
 class Menu(models.Model):
     FILE_TYPE_CHOICES = [
@@ -51,7 +46,7 @@ class Comments(models.Model):
     #post = models.OneToOneField(Posts, on_delete=models.CASCADE,related_name='post')
     parentId = models.CharField(max_length=100,null=True)
     status = models.CharField(max_length=100,default='0')
-    created = models.DateField(auto_now_add=True)
+    created_at = models.DateField(auto_now_add=True)
 
 class MailMessage(models.Model):
     subject =  models.CharField(max_length=200,null=True)

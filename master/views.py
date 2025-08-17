@@ -77,7 +77,22 @@ class Signup(TemplateView):
         return self.render_to_response(self.get_context_data())
 
     def post(self, request, *args, **kwargs):
-        pass
+        email = request.POST['email']
+        username = request.POST['username']
+        password = request.POST['password']
+        if User.objects.filter(email=email).exists():
+            messages.error(request, "Email already exists. Please log in or use another email.")
+            return HttpResponseRedirect(reverse('master:signup'))
+        try:
+            user = User(email=email, username=username)
+            user.set_password(password)
+            user.save()
+            return redirect('master:signin')
+        except Exception as e:
+            messages.error(request, e)
+            return HttpResponseRedirect(reverse('master:signup'))
+
+        
 
 
 class Logout(View):
@@ -344,10 +359,81 @@ class Client(TemplateView):
 class Post(TemplateView):
     template_name = 'master/post.html'
     def get(self, request, *args, **kwargs):
-        return self.render_to_response(self.get_context_data())
+        parentId = kwargs.get('parentId', None)
+        postId = kwargs.get('postId', None)
+        action = {}
+        if 'Add' in kwargs.get('permission'):
+            if parentId:
+                action['add'] = f'<a class="btn btn-primary" href="{settings.BASE_URL}master/website/post/create/{parentId}">Add</a>'
+            else:
+                action['add'] = f'<a class="btn btn-primary" href="{settings.BASE_URL}master/website/post/create">Add</a>'
+                action['excel'] = f'<a class="btn btn-info" href="{settings.BASE_URL}master/website/post/excel">Excel</a>'
+            if postId=='create':
+               self.template_name = "master/postedit.html"
+               if parentId and not Posts.objects.filter(id=parentId,type=2).exists():
+                  return HttpResponseRedirect(reverse('master:posts', args=[parentId]))
+               return self.render_to_response(self.get_context_data())    
+              
+            if postId and 'Edit' in kwargs.get('permission'):
+               post = Posts.objects.filter(Q(parent=parentId),id=postId).values().first()
+               if post:
+                  self.template_name = "master/postedit.html"
+                  return self.render_to_response(self.get_context_data(post=post))
+               return HttpResponseRedirect(reverse('master:posts')) 
+    
 
+        return self.render_to_response(self.get_context_data(action=action))
+
+    def post(self, request, *args, **kwargs):
+        parentId = kwargs.get('parentId', None)
+        postId = kwargs.get('postId', None)
+        if postId=='create' and 'Add' in kwargs.get('permission'):
+                post = request.POST
+                Posts.objects.create(
+                    name=post.get('name', ''),
+                    image=post.get('image', ''),
+                    rate=post.get('rate', ''),
+                    size=post.get('size', ''),
+                    type=post.get('type', ''),
+                    genre=post.get('genre', ''),
+                    lang=post.get('lang', ''),
+                    status=post.get('status', ''),
+                    starcast=post.get('starcast', ''),
+                    story=post.get('story', ''),
+                    link=post.get('link', ''),
+                    menu=post.get('menu', ''),
+                    parent=parentId,
+                    duration=post.get('duration', ''),
+                    release_date=post.get('release_date', '')
+                )
+                return HttpResponseRedirect(reverse('master:posts')) 
+        elif int(postId) and 'Edit' in kwargs.get('permission'):
+                post = request.POST
+                if parentId:
+                    update = Posts.objects.filter(parent=parentId,id=postId).first()
+                else:
+                    update = Posts.objects.filter(id=postId).first()
+                if update:
+                    update.image = post.get('image', '')
+                    update.rate = post.get('rate', '')
+                    update.size = post.get('size', '')
+                    update.genre = post.get('genre', '')
+                    update.lang = post.get('lang', '')
+                    update.status = post.get('status', '')
+                    update.starcast = post.get('starcast', '')
+                    update.story = post.get('story', '')
+                    update.link = post.get('link', '')
+                    update.menu = post.get('menu', '')
+                    update.duration=post.get('duration', '')
+                    update.release_date = post.get('release_date', '')
+                    update.save()
+                    if parentId:
+                        return HttpResponseRedirect(reverse('master:post', args=[postId, parentId]))
+                    return HttpResponseRedirect(reverse('master:post', args=[postId]))
+        return HttpResponseRedirect(reverse('master:posts'))   
 
     def put(self, request, *args, **kwargs):
+        if 'Add' in kwargs.get('permission'):
             parentId = kwargs.get('parentId', None)
             postId = kwargs.get('postId', None)
             action = {}
@@ -450,7 +536,16 @@ class Post(TemplateView):
                   "action":action
             }, status=200)
 
-   
+    def patch(self, request, *args, **kwargs):
+        if 'Delete' in kwargs.get('permission'):
+            data = json.loads(request.body)
+            Posts.objects.filter(id=data.get('id')).delete()
+            Posts.objects.filter(parent=data.get('id')).delete()
+            return JsonResponse({
+                    "status": True,
+                    "msg":"Item delete successfully!"
+            }, status=200)
+
 @RoleRequired('Menu')
 class Menus(TemplateView):
     template_name = 'master/menu.html'
@@ -513,6 +608,7 @@ class Menus(TemplateView):
         return HttpResponseRedirect(reverse('master:menus'))  
    
     def put(self, request, *args, **kwargs):
+        if 'Add' in kwargs.get('permission'):
             data = json.loads(request.body)
             parentId = kwargs.get('parentId', None)
             start = int(data.get('start', 1))
@@ -558,5 +654,14 @@ class Menus(TemplateView):
             "action":action
             }, status=200)
 
-
+    def patch(self, request, *args, **kwargs):
+        if 'Delete' in kwargs.get('permission'):
+            data = json.loads(request.body)
+            Menu.objects.filter(id=data.get('id')).delete()
+            Menu.objects.filter(menuId=data.get('id')).delete()
+            
+            return JsonResponse({
+                    "status": True,
+                    "msg":"Item delete successfully!"
+            }, status=200)
 
