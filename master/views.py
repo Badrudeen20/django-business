@@ -236,7 +236,7 @@ class Permissions(TemplateView):
         return allow
 
 @RoleRequired('Module')
-class ModuleList(TemplateView):
+class Modules(TemplateView):
     template_name = 'master/module.html'
 
     def get(self, request, *args, **kwargs):
@@ -455,9 +455,64 @@ class Post(TemplateView):
 class Menus(TemplateView):
     template_name = 'master/menu.html'
     def get(self, request, *args, **kwargs):
-        return self.render_to_response(self.get_context_data())
+        parentId = kwargs.get('parentId', None)
+        menuId = kwargs.get('menuId', None)
+        action = {}
+
+        if 'Add' in kwargs.get('permission'):
+            if parentId:
+                action['add'] = f'<a class="btn btn-primary" href="{settings.BASE_URL}master/website/menu/create/{parentId}">Add</a>'
+            else:
+                action['add'] = f'<a class="btn btn-primary" href="{settings.BASE_URL}master/website/menu/create">Add</a>'
+        
+            if menuId=='create':
+                if parentId and not Menu.objects.filter(id=parentId,type=2).exists():
+                    return HttpResponseRedirect(reverse('master:menus')) 
+                else:
+                    self.template_name = "master/menuedit.html" 
+                    return self.render_to_response(self.get_context_data())
+                    
+        if menuId and 'Edit' in kwargs.get('permission'):
+            if parentId:
+                menu = Menu.objects.filter(id=menuId,menuId=parentId).values().first()
+            else:
+                menu = Menu.objects.filter(id=menuId).values().first()
+            if menu:
+                self.template_name = "master/menuedit.html"
+                return self.render_to_response(self.get_context_data(menu=menu))
+
+            return HttpResponseRedirect(reverse('master:menus')) 
+
+        return self.render_to_response(self.get_context_data(action=action))
 
     def post(self, request, *args, **kwargs):
+        parentId = kwargs.get('parentId', None)
+        menuId = kwargs.get('menuId', None)
+        action = {}
+        if menuId =='create' and 'Add' in kwargs.get('permission'):
+                Menu.objects.create(
+                name=request.POST['menu'], 
+                link=request.POST['link'],
+                type=request.POST['type'],
+                menuId=parentId,
+                status=1
+                )
+                return HttpResponseRedirect(reverse('master:menus')) 
+        elif int(menuId) and 'Edit' in kwargs.get('permission'):
+                if parentId:
+                    update = Menu.objects.filter(menuId=parentId,id=menuId).first()
+                else:
+                    update = Menu.objects.filter(id=menuId).first()
+                if update:
+                    update.name = request.POST['menu']
+                    update.link = request.POST['link']
+                    update.save()
+                    if parentId:
+                        return HttpResponseRedirect(reverse('master:menu', args=[menuId, parentId]))
+                    return HttpResponseRedirect(reverse('master:menu', args=[menuId]))
+        return HttpResponseRedirect(reverse('master:menus'))  
+   
+    def put(self, request, *args, **kwargs):
             data = json.loads(request.body)
             parentId = kwargs.get('parentId', None)
             start = int(data.get('start', 1))
@@ -479,9 +534,9 @@ class Menus(TemplateView):
                   action_btn = ''
                   if 'Edit' in kwargs.get('permission'):
                       if parentId:
-                        action_btn += f'<a class="btn btn-primary" href="{settings.BASE_URL}movieplanet/admin/website/menu/{i.id}/{parentId}">Edit</a>' 
+                        action_btn += f'<a class="btn btn-primary" href="{settings.BASE_URL}master/website/menu/{i.id}/{parentId}">Edit</a>' 
                       else:
-                        action_btn += f'<a class="btn btn-primary" href="{settings.BASE_URL}movieplanet/admin/website/menu/{i.id}">Edit</a>'   
+                        action_btn += f'<a class="btn btn-primary" href="{settings.BASE_URL}master/website/menu/{i.id}">Edit</a>'   
                   if 'Delete' in kwargs.get('permission'):
                       action_btn += f'<button class="btn btn-danger" onclick="deleteModal({i.id})">Delete</button>' 
                   if i.type==2:
@@ -503,12 +558,5 @@ class Menus(TemplateView):
             "action":action
             }, status=200)
 
-class Modules(TemplateView):
-    template_name = 'master/module.html'
-    def get(self, request, *args, **kwargs):
-        return self.render_to_response(self.get_context_data())
-
-    def post(self, request, *args, **kwargs):
-        pass
 
 
