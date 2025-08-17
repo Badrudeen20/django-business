@@ -49,27 +49,7 @@
                   <a href="#" class="btn btn-info mx-2">Donload 780P</a>
                 </div>
             </div>
-            <!-- 
-            <div class="my-3" method="post" id="replay-">
-              {% csrf_token %}
-              <label for="comment" class="form-label">Comments</label>
-              {% with request.session.customer as customer %}
-                {% if customer %}
-                  <textarea class="form-control" name="replay" rows="3"></textarea>
 
-                  <button class="btn btn-primary mt-1" onclick="sendComment()">Send</button>
-                {% endif %}
-              {% endwith %}
-            
-            </div>
-
-
-
-            <ul class="list-group comment" id="comments">
-             
-            </ul>
-             -->
-           
           </div>
       
 
@@ -86,27 +66,27 @@
                         {% if forloop.counter|divisibleby:2 %}
                             <div class="col-7 ">
                               <div class="card-block">                          
-                                  {% if t.post.type == 2 %}                        
-                                    <a class="card-text" href="{{baseUrl}}movieplanet/{{t.post.name|plusify}}">{{t.post.name}}</a>
+                                  {% if t.type == 2 %}                        
+                                    <a class="card-text" href="{{baseUrl}}{{t.name|plusify}}">{{t.name}}</a>
                                   {% else %}
-                                    <a class="card-text" href="{{baseUrl}}movieplanet/detail/{{t.post.name|plusify}}">{{t.post.name}}</a>
+                                    <a class="card-text" href="{{baseUrl}}detail/{{t.name|plusify}}">{{t.name}}</a>
                                   {% endif %}
                               </div>
                             </div>
                             <div class="col-5">
-                              <img class="d-block w-100" src="{{t.post.image}}" alt="">
+                              <img class="d-block w-100" src="{{t.image}}" alt="">
                             </div>
                         {% else %}
                             <div class="col-5">
-                              <img class="d-block w-100" src="{{t.post.image}}" alt="">
+                              <img class="d-block w-100" src="{{t.image}}" alt="">
                             </div>
                             <div class="col-7">
                               <div class="card-block">
                                 
-                                  {% if t.post.type == 2 %}                        
-                                    <a class="card-text" href="{{baseUrl}}movieplanet/{{t.post.name|plusify}}">{{t.post.name}}</a>
+                                  {% if t.type == 2 %}                        
+                                    <a class="card-text" href="{{baseUrl}}{{t.name|plusify}}">{{t.name}}</a>
                                   {% else %}
-                                    <a class="card-text" href="{{baseUrl}}movieplanet/detail/{{t.post.name|plusify}}">{{t.post.name}}</a>
+                                    <a class="card-text" href="{{baseUrl}}detail/{{t.name|plusify}}">{{t.name}}</a>
                                   {% endif %}
                               </div>
                             </div> 

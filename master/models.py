@@ -24,7 +24,7 @@ class Role(models.Model):
     status = models.CharField(max_length=100)
 
 class Access(models.Model):
-    user =  models.ForeignKey(User, on_delete=models.CASCADE,related_name='roles')
+    user =  models.ForeignKey(User, on_delete=models.CASCADE,related_name='access')
     role = models.ForeignKey(Role, on_delete=models.CASCADE,related_name='role')
     assign = models.TextField(null=True, blank=True)
     given = models.ForeignKey(User, on_delete=models.CASCADE,related_name='given',null=True,blank=True,default=None)

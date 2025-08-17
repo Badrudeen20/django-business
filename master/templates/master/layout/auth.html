@@ -16,20 +16,45 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.min.js" ></script>
     <script>
       $(document).ready(function(){
-          $('#auth-form').submit(function(e){
-            e.preventDefault()          
+        $('#auth-form').submit(function(e){
+            e.preventDefault();
+
+            /*
+            
             $.ajax({
-                url: "{{ settings.BASE_URL }}",
+                url: "",
                 method:"POST",
                 data: $(this).serialize(),
             }).then ( function( json, textStatus, jqXHR ) {
+                console.log(json)
                 if(json.success){
-                    callback(json);
-                    $('select[name=status]').val('');
+                  location.reload(true);
                 }
-                
             });
-          })
+
+            */
+
+            $.ajax({
+              url: "{{ settings.BASE_URL }}", 
+              method: 'POST', 
+              data: $(this).serialize(),
+              dataType: 'json', 
+              success: function(response) {
+                  console.log(response)
+                  if(response.success){
+                    location.reload(true);
+                  }    
+              },
+              error: function(xhr, status, error) {
+                console.error('Error:', error);
+              },
+              complete: function() {
+                console.log('Request complete.');
+              }
+            });
+
+
+        })
       })
     </script>
   </body>

@@ -14,11 +14,12 @@ class Home(TemplateView):
 
     template_name = 'user/home.html'
     def get(self, request, *args, **kwargs):
-        return self.render_to_response(self.get_context_data())
+        baseUrl = settings.BASE_URL
+        trands =  Posts.objects.filter(trand=1,status=1)[0:5]
+        return self.render_to_response(self.get_context_data(Trands=trands,baseUrl=baseUrl))
 
     def post(self, request, *args, **kwargs):
         data = json.loads(request.body.decode('utf-8'))
-        
         start = data.get('start')
         length = data.get('length')
         search = data.get('search')
@@ -188,9 +189,19 @@ class Detail(TemplateView):
         linkList = Link.split("+")
         MovieName = " ".join(linkList)
         data = Posts.objects.filter(name=MovieName,status=1).values().first()
-        return self.render_to_response(self.get_context_data(link=Link,post=data))
+        baseUrl = settings.BASE_URL
+        trands =  Posts.objects.filter(trand=1,status=1)[0:5]
+        return self.render_to_response(self.get_context_data(link=Link,post=data,Trands=trands,baseUrl=baseUrl))
       
       def put(self, request, *args, **kwargs):
         Link = kwargs.get('Link', None)
         return JsonResponse({"status":True,"Menus":Link})
+      
+class Trand(View):
+    def get(self, request, *args, **kwargs):
+        trands =  Posts.objects.filter(trand=1,status=1).values()
+        return JsonResponse({
+            "success": True,
+            "data":list(trands)
+        }, status=200) 
       

@@ -51,26 +51,26 @@
                           {% if forloop.counter|divisibleby:2 %}
                               <div class="col-7 ">
                                 <div class="card-block">  
-                                  {% if t.post.type == 2 %}                        
-                                    <a class="card-text" href="{{baseUrl}}movieplanet/{{t.post.name|plusify}}">{{t.post.name}}</a>
+                                  {% if t.type == 2 %}                        
+                                    <a class="card-text" href="{{baseUrl}}{{t.name|plusify}}">{{t.name}}</a>
                                   {% else %}
-                                    <a class="card-text" href="{{baseUrl}}movieplanet/detail/{{t.post.name|plusify}}">{{t.post.name}}</a>
+                                    <a class="card-text" href="{{baseUrl}}detail/{{t.name|plusify}}">{{t.name}}</a>
                                   {% endif %}
                                 </div>
                               </div>
                               <div class="col-5">
-                                <img class="d-block w-100" src="{{t.post.image}}" alt="">
+                                <img class="d-block w-100" src="{{t.image}}" alt="">
                               </div>
                           {% else %}
                               <div class="col-5">
-                                <img class="d-block w-100" src="{{t.post.image}}" alt="">
+                                <img class="d-block w-100" src="{{t.image}}" alt="">
                               </div>
                               <div class="col-7">
                                 <div class="card-block">
-                                  {% if t.post.type == 2 %}                        
-                                    <a class="card-text" href="{{baseUrl}}movieplanet/{{t.post.name|plusify}}">{{t.post.name}}</a>
+                                  {% if t.type == 2 %}                        
+                                    <a class="card-text" href="{{baseUrl}}{{t.name|plusify}}">{{t.name}}</a>
                                   {% else %}
-                                    <a class="card-text" href="{{baseUrl}}movieplanet/detail/{{t.post.name|plusify}}">{{t.post.name}}</a>
+                                    <a class="card-text" href="{{baseUrl}}detail/{{t.name|plusify}}">{{t.name}}</a>
                                   {% endif %}
                                    
                                 </div>

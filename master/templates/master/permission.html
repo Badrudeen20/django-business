@@ -51,7 +51,7 @@ function loadData(){
                 
                 $.ajax({
                     url: "{{ settings.BASE_URL }}",
-                    method:"POST",
+                    method:"PUT",
                     data:JSON.stringify({start:pgno, length:8,search:search,type:'View'})
                 }).then ( function( json, textStatus, jqXHR ) {
                      callback(json);

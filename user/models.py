@@ -21,15 +21,16 @@ class Posts(models.Model):
     status = models.CharField(max_length=100)
     starcast=models.TextField()
     menu=models.TextField(null=True, blank=True)
+    trand = models.IntegerField(max_length=100,default=0)
     release_date=models.DateField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
-class Trand(models.Model):
-    post = models.ForeignKey(Posts,related_name="trands", on_delete=models.CASCADE)
-    status = models.CharField(max_length=100)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+# class Trand(models.Model):
+#     post = models.ForeignKey(Posts,related_name="trands", on_delete=models.CASCADE)
+#     status = models.CharField(max_length=100)
+#     created_at = models.DateTimeField(auto_now_add=True)
+#     updated_at = models.DateTimeField(auto_now=True)
 
 class Menu(models.Model):
     FILE_TYPE_CHOICES = [

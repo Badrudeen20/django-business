@@ -1,7 +1,9 @@
 from django.views.generic.edit import CreateView
 from django.views.generic import TemplateView
 from django.shortcuts import render,redirect
-from django.contrib.auth import authenticate, login
+from django.urls import reverse
+from django.http import HttpResponse, HttpResponseRedirect
+from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User 
 from django.views import View
@@ -78,16 +80,22 @@ class Signup(TemplateView):
         pass
 
 
+class Logout(View):
+    def get(self, request):
+        logout(request)
+        request.session.flush()
+        return HttpResponseRedirect(reverse('master:signin'))
+
 class Dashboard(TemplateView):
     template_name = 'master/dashboard.html'
     def get(self, request, *args, **kwargs):
         return self.render_to_response(self.get_context_data())
 
-
+@RoleRequired(None)
 class Sidebar(View):
     def get(self, request, *args, **kwargs):
         modules = kwargs.get('module')
-        sidebarList =  Module.objects.filter(status=1).values()
+        sidebarList =  Module.objects.filter(module__in=modules,status=1).values()
        
         return JsonResponse({
             "success": True,
@@ -119,7 +127,7 @@ class Permissions(TemplateView):
         else:
             return self.render_to_response(self.get_context_data())
 
-    def post(self, request, *args, **kwargs):
+    def put(self, request, *args, **kwargs):
             data = json.loads(request.body)
             start = int(data.get('start', 1))
             length = int(data.get('length', 10))
@@ -128,19 +136,20 @@ class Permissions(TemplateView):
             endIndex = startIndex + int(length)
             listData = []
             roles = kwargs.get('roleIds')
+            print(roles)
             if search :
-                  data = Access.objects.filter(name__icontains=search,id__in=roles)[startIndex:endIndex].all()
-                  totalLen = list(Access.objects.filter(name__icontains=search,id__in=roles).all())
+                  data = Role.objects.filter(name__icontains=search,id__in=roles)[startIndex:endIndex].all()
+                  totalLen = list(Role.objects.filter(name__icontains=search,id__in=roles).all())
             else:
-                  data = Access.objects.filter(id__in=roles)[startIndex:endIndex].all()
-                  totalLen = list(Access.objects.filter(id__in=roles).all())
+                  data = Role.objects.filter(id__in=roles)[startIndex:endIndex].all()
+                  totalLen = list(Role.objects.filter(id__in=roles).all())
             
             for i in data:
 
                   permission = {
                   "id":i.id,
-                  "roleName":i.role.name,
-                  "action":(f'<a class="btn btn-primary" href="{settings.BASE_URL}master/administration/permissions/{i.id}" >Permission</a>')
+                  "roleName":i.name,
+                  "action":(f'<a class="btn btn-primary" href="{settings.BASE_URL}master/administration/permission/{i.id}" >Permission</a>')
                   }
                   listData.append(permission)
 
@@ -150,6 +159,57 @@ class Permissions(TemplateView):
                   "iTotalDisplayRecords":len(totalLen),
                   "aaData":listData
             }, status=200)   
+    
+    def post(self, request, *args, **kwargs):
+            roleId = kwargs.get('role', '')
+
+            if roleId and 'Edit' in kwargs.get('permission'):
+                module = Module.objects.all()
+                for m in module:
+                    perm = Permission.objects.filter(modules_id=m.id,role_id=roleId).first()
+                    if m.parent_id=='':
+                        if perm:
+                            if m.module in request.POST:
+                               perm.permission =  request.POST[m.module]
+                               perm.save()
+                            else:
+                               perm.delete()
+                        else:
+                            if m.module in request.POST:
+                                Permission.objects.create(
+                                permission=request.POST[m.module],
+                                role_id = roleId,
+                                modules_id = m.id
+                                )
+                    else:
+                        if m.parent_id:
+                              permission = ''
+                              if m.module+'[view]' in request.POST:
+                                    permission += request.POST[m.module+'[view]']
+                              if m.module+'[add]' in request.POST:
+                                    permission +=','+request.POST[m.module+'[add]']
+                              if m.module+'[edit]' in request.POST:
+                                    permission +=','+request.POST[m.module+'[edit]']
+                              if m.module+'[delete]' in request.POST:
+                                    permission +=','+request.POST[m.module+'[delete]']
+                                       
+                              if perm:
+                                if permission:
+                                    perm.permission =  permission
+                                    perm.save()
+                                else:
+                                    perm.delete()  
+                              else:
+                                  if permission:
+                                    Permission.objects.create(
+                                        permission=permission,
+                                        role_id = roleId,
+                                        modules_id = m.id,
+                                        module_parent_id=m.parent_id
+                                    )
+                                   
+                return HttpResponseRedirect(reverse('master:permission', args=[roleId]))       
+            return redirect(reverse('master:permissions'))
     
     def checkParent(self, role, module, mid):
         allow = '<ul class="list-group">'
@@ -234,6 +294,7 @@ class Client(TemplateView):
     def get(self, request, *args, **kwargs):
         return self.render_to_response(self.get_context_data())
 
+
     def put(self, request, *args, **kwargs):
             data = json.loads(request.body)
             start = int(data.get('start', 1))
@@ -243,62 +304,43 @@ class Client(TemplateView):
             endIndex = startIndex + int(length)
             listData = []
             totalLen=0
-            
-            cids = self.checkRoles(kwargs.get('authId'),kwargs.get('roleIds'),[kwargs.get('authId')])
-            print(cids)     
+            clientIds = self.clients(kwargs.get('authId'),kwargs.get('isAdmin'))
+
             if search:
-                  data = User.objects.filter(is_superuser="0",username__icontains=search).exclude(id__in=cids).filter(roles__role_id__in=kwargs.get('roleIds')).distinct()[startIndex:endIndex]
-                  totalLen = User.objects.filter(is_superuser="0",username__icontains=search).exclude(id__in=cids).filter(roles__role_id__in=kwargs.get('roleIds')).distinct().count()
+                  data = User.objects.filter(Q(access__isnull=True) | Q(id__in=clientIds),is_superuser="0",username__icontains=search)[startIndex:endIndex]
+                  totalLen = User.objects.filter(Q(access__isnull=True) | Q(id__in=clientIds),is_superuser="0",username__icontains=search).count()
             else:
-                  data = User.objects.filter(is_superuser="0",username__icontains=search).exclude(id__in=cids).filter(roles__role_id__in=kwargs.get('roleIds')).distinct()[startIndex:endIndex]
-                  totalLen = User.objects.filter(is_superuser="0",username__icontains=search).exclude(id__in=cids).filter(roles__role_id__in=kwargs.get('roleIds')).distinct().count()
+                  data = User.objects.filter(Q(access__isnull=True) | Q(id__in=clientIds),is_superuser="0")[startIndex:endIndex]
+                  totalLen = User.objects.filter(Q(access__isnull=True) | Q(id__in=clientIds),is_superuser="0").count()
 
             for i in data:
                   btn =''
                   if 'Edit' in kwargs.get('permission'):
-                        btn += f'<a class="btn btn-primary" href="{settings.BASE_URL}master/administration/user/{i.id}" >Edit</a>'
+                     btn += f'<a class="btn btn-primary" href="{settings.BASE_URL}master/administration/user/{i.id}" >Edit</a>'
                   post = {
-                        "id":i.id,
-                        "name":i.username,
-                        "email":i.email,
-                        "action":btn
+                    "id":i.id,
+                    "name":i.username,
+                    "email":i.email,
+                    "action":btn
                   }
                   listData.append(post)
             
             return JsonResponse({
-                        "success": True,
-                        "iTotalRecords":totalLen,
-                        "iTotalDisplayRecords":totalLen,
-                        "aaData":listData
+                "success": True,
+                "iTotalRecords":totalLen,
+                "iTotalDisplayRecords":totalLen,
+                "aaData":listData
             }, status=200)
 
-    def checkRoles(self, aid, rids, collected=None):
-        if collected is None:
-           collected = []
-        if User.objects.filter(id=aid,is_superuser=1).exists():
-           return collected
-        data = User.objects.exclude(id=aid).all()
-        gids = list(Access.objects.filter(user_id=aid).filter(
-            ~Q(given_id=None)
-        ).values('given_id', 'role_id').distinct())
-        ids = list(set(map(lambda x: x['given_id'], gids)))
+    
+    def clients(self, authId,isAdmin):
+        if isAdmin:
+           return list(Access.objects.exclude(user_id=authId).distinct().values_list('user_id', flat=True))
+        else:
+           return list(Access.objects.filter(given_id=authId).values_list('user_id', flat=True))
 
-        for i in data:
-            cgids = list(i.roles.filter(
-            ~Q(given_id=None)
-            ).values('given_id', 'role_id').distinct())
-            
-            if i.is_superuser == 1:
-               collected.append(i.id) 
-            elif all(item in cgids for item in gids):  
-               collected.append(i.id) 
-            elif i.id in ids and i.id not in collected:
-               collected.append(i.id)
-               self.checkRoles(i.id, rids, collected)
-        return collected   
 
-            
-@RoleRequired('Post')
+@RoleRequired('Posts')
 class Post(TemplateView):
     template_name = 'master/post.html'
     def get(self, request, *args, **kwargs):
@@ -319,23 +361,7 @@ class Post(TemplateView):
             item = data.get('item', [])
             status = data.get('status', '')
             trand = data.get('trand', '')
-            # if status=="1" or status=="0":
-            #    for i in item:
-            #        if i['check']:
-            #           Posts.objects.filter(id=i['id']).update(status=status)
 
-            # if trand=="1" or trand=="0":
-            #    for i in item:
-            #        if i['check']:
-            #           if trand == "1":
-            #              if not Trand.objects.filter(post_id=i['id']).exists():
-            #                   Trand.objects.create(
-            #                   post_id=i['id'],
-            #                   status=1
-            #                   )
-            #           elif trand == "0":
-            #              Trand.objects.filter(post_id=i['id']).delete()
-            
             if search :
                   data = Posts.objects.filter(Q(parent=parentId),name__icontains=search)[startIndex:endIndex].all()
                   totalLen = Posts.objects.filter(Q(parent=parentId),name__icontains=search).count()
@@ -346,7 +372,6 @@ class Post(TemplateView):
             
             listData = []
             for i in data:
-                  
                   btn =''
                   if 'Edit' in kwargs.get('permission'):
                      if parentId:
@@ -360,16 +385,15 @@ class Post(TemplateView):
                   if i.type==2:
                      link = f'<a href="{settings.BASE_URL}master/website/posts/{i.id}" >{i.name}</a>'
                   trow = ''
-                #   trand = i.trands.first()
-                #   if trand and trand.post_id == i.id:
-                #      trow = '<span class="badge bg-primary">Trand</span>'
-                #   else:
-                #       trow = ''
+    
+                  if i.trand:
+                     trow = '<span class="badge bg-primary">Trand</span>'
+                  else:
+                      trow = ''
 
                   post = {
                         "id":f'<div class="d-flex justify-content-between"><span>{i.id}</span> <input type="checkbox" {"checked" if tickall else ""} name="item[{i.id}]" value="{i.id}" class="item" /></div>',
                         "name":link,
-                       
                         "trand":trow,
                         "rate":i.rate,
                         "status":(
