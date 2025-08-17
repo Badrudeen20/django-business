@@ -12,7 +12,7 @@ class MasterMiddlewere(object):
     def __call__(self, request):
         url = request.path_info  
         if request.user.is_authenticated:
-           
+            
             if request.session.get('master'):
                 if request.path == '/master/signin/' or request.path == '/master/signin':
                     return redirect('master:dashboard')

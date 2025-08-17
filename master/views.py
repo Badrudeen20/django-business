@@ -361,6 +361,16 @@ class Post(TemplateView):
             item = data.get('item', [])
             status = data.get('status', '')
             trand = data.get('trand', '')
+            
+            if status=="1" or status=="0":
+               for i in item:
+                   if i['check']:
+                      Posts.objects.filter(id=i['id']).update(status=status)
+
+            if trand=="1" or trand=="0":
+               for i in item:
+                   if i['check']:
+                      Posts.objects.filter(id=i['id']).update(trand=trand)
 
             if search :
                   data = Posts.objects.filter(Q(parent=parentId),name__icontains=search)[startIndex:endIndex].all()

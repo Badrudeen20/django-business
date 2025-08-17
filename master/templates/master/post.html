@@ -50,7 +50,6 @@
                     <tr>
                         <th class="d-flex justify-content-between"><span>Id</span> <input type="checkbox" name="tickall" value="tick" /></th>
                         <th>Name</th>
-                        <!-- <th>Image</th> -->
                         <th>Trand</th>
                         <th>Rate</th>
                         <th>Status</th>
@@ -83,7 +82,9 @@
 			"serverSide" : true,
             "ordering"   : false,
             "pageLength" : 25,
-           
+            "language": {
+                "search": ""  // This removes the "Search:" label
+            },
             ajax: function (data, callback, settings) {
                 var api = this.api();
                 var search = api.search() 

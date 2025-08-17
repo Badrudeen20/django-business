@@ -4,9 +4,9 @@
 
 {% block content %}
 <div class="container d-flex justify-content-center">
-    {% with request.session.customer as customer %}
-        {% if customer %}
-            <h2>Welcome, {{ customer.name }}</h2>
+    {% with request.session.master as master %}
+        {% if master %}
+            <h2>Welcome, {{ master.username }}</h2>
         {% else %}
             <h2>Welcome, Guest!</h2>
         {% endif %}
