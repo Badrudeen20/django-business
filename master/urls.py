@@ -29,6 +29,8 @@ urlpatterns=[
   path('website/menu/<str:menuId>/<str:parentId>',Menus.as_view(),name="menu"),
 
   path('administration/users',Client.as_view(),name="users"),
+  path('administration/user/<int:userId>',Client.as_view(),name="user"),
+
   path('sidebar/', Sidebar.as_view(),name="sidebar"),
   
 ]

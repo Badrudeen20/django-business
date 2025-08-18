@@ -1,5 +1,5 @@
 
-{% extends "movieplanet/layout/admin.html" %}
+{% extends "master/layout/admin.html" %}
 
 
 {% block content %}
@@ -16,16 +16,14 @@
                                     <th scope="col">Id</th>
                                     <th scope="col">Role</th>
                                     <th scope="col">Permission</th>
-                                    <th scope="col">View</th>
                               </tr>
                         </thead>
                         <tbody>
                               {% for t in roles %}
                                     <tr>
-                                          <th scope="row">1</th>
+                                          <th scope="row">{{forloop.counter}}</th>
                                           <td>{{t.role.name}}</td>
                                           <td><input type="checkbox" name="{{t.role.name}}" {% if t.assign %}checked{% endif %} value="{{t.role_id}}" class="form-check-input" /></td>
-                                          <td><button class="btn btn-primary">View</button></td>
                                     </tr>
                               {% endfor %}
                               

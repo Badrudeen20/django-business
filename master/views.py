@@ -102,10 +102,12 @@ class Logout(View):
         request.session.flush()
         return HttpResponseRedirect(reverse('master:signin'))
 
+
 class Dashboard(TemplateView):
     template_name = 'master/dashboard.html'
     def get(self, request, *args, **kwargs):
         return self.render_to_response(self.get_context_data())
+
 
 @RoleRequired(None)
 class Sidebar(View):
@@ -118,9 +120,19 @@ class Sidebar(View):
             "data":list(sidebarList)
         }, status=200) 
 
+
 @RoleRequired('Permission')
 class Permissions(TemplateView):
-    template_name = 'master/permission.html'
+    
+    def __init__(self, *args, **kwargs):
+        self.template_name = 'master/permission.html'
+        super().__init__(*args, **kwargs)
+
+    def dispatch(self, request, *args, **kwargs):
+        if 'View' not in kwargs.get('permission'):
+           self.template_name = 'master/401.html'  
+        return super().dispatch(request, *args, **kwargs)
+
     def get(self, request, *args, **kwargs):
         roleId = kwargs.get('role', '')
         if roleId and 'Edit' in kwargs.get('permission'):
@@ -160,7 +172,6 @@ class Permissions(TemplateView):
                   totalLen = list(Role.objects.filter(id__in=roles).all())
             
             for i in data:
-
                   permission = {
                   "id":i.id,
                   "roleName":i.name,
@@ -177,7 +188,6 @@ class Permissions(TemplateView):
     
     def post(self, request, *args, **kwargs):
             roleId = kwargs.get('role', '')
-
             if roleId and 'Edit' in kwargs.get('permission'):
                 module = Module.objects.all()
                 for m in module:
@@ -250,9 +260,18 @@ class Permissions(TemplateView):
       
         return allow
 
+
 @RoleRequired('Module')
 class Modules(TemplateView):
-    template_name = 'master/module.html'
+
+    def __init__(self, *args, **kwargs):
+        self.template_name = 'master/module.html'
+        super().__init__(*args, **kwargs)
+
+    def dispatch(self, request, *args, **kwargs):
+        if 'View' not in kwargs.get('permission'):
+           self.template_name = 'master/401.html'  
+        return super().dispatch(request, *args, **kwargs)
 
     def get(self, request, *args, **kwargs):
         return self.render_to_response(self.get_context_data())
@@ -305,8 +324,27 @@ class Modules(TemplateView):
 
 @RoleRequired('User')
 class Client(TemplateView):
-    template_name = 'master/user.html'
+
+    def __init__(self, *args, **kwargs):
+        self.template_name = 'master/user.html'
+        super().__init__(*args, **kwargs)
+
+    def dispatch(self, request, *args, **kwargs):
+        if 'View' not in kwargs.get('permission'):
+           self.template_name = 'master/401.html'  
+        return super().dispatch(request, *args, **kwargs) 
+
     def get(self, request, *args, **kwargs):
+        userId = kwargs.get('userId', None)
+        if userId and 'Edit' in kwargs.get('permission'):
+            clientIds = self.clients(kwargs.get('authId'),kwargs.get('isAdmin'))
+            if userId in clientIds or User.objects.filter(access__isnull=True,id=userId).exists():
+               self.template_name = 'master/useredit.html'
+               roles = Access.objects.filter(user_id=kwargs.get('authId')).all()
+               
+               return self.render_to_response(self.get_context_data(roles=roles))
+            else:
+               return HttpResponseRedirect(reverse('master:users'))
         return self.render_to_response(self.get_context_data())
 
 
@@ -348,6 +386,28 @@ class Client(TemplateView):
             }, status=200)
 
     
+    def post(self, request, *args, **kwargs):
+        userId = kwargs.get('userId', None)
+        if userId and 'Edit' in kwargs.get('permission'):
+           
+            clientIds = self.clients(kwargs.get('authId'),kwargs.get('isAdmin'))
+            if userId in clientIds or User.objects.filter(access__isnull=True,id=userId).exists():
+               roles = Access.objects.filter(user_id=kwargs.get('authId')).all()
+               for r in roles:
+                   if r.role.name in request.POST:
+                      if Access.objects.filter(user_id=userId,role_id=r.id).exists():
+                         role = Access.objects.filter(user_id=userId,role_id=r.id).first()
+                         role.given_id = kwargs.get('authId')
+                         role.save()
+                      else:
+                         Access.objects.create(
+                         user_id = userId,
+                         role_id = r.id,
+                         given_id = kwargs.get('authId')
+                         )
+               return HttpResponseRedirect(reverse('master:user', args=[userId])) 
+            else:
+                return HttpResponseRedirect(reverse('master:users')) 
     def clients(self, authId,isAdmin):
         if isAdmin:
            return list(Access.objects.exclude(user_id=authId).distinct().values_list('user_id', flat=True))
@@ -358,6 +418,17 @@ class Client(TemplateView):
 @RoleRequired('Posts')
 class Post(TemplateView):
     template_name = 'master/post.html'
+
+    def __init__(self, *args, **kwargs):
+        self.template_name = 'master/post.html'
+        super().__init__(*args, **kwargs)
+
+    def dispatch(self, request, *args, **kwargs):
+        if 'View' not in kwargs.get('permission'):
+           self.template_name = 'master/401.html'  
+        return super().dispatch(request, *args, **kwargs) 
+
+
     def get(self, request, *args, **kwargs):
         parentId = kwargs.get('parentId', None)
         postId = kwargs.get('postId', None)
@@ -442,7 +513,6 @@ class Post(TemplateView):
         return HttpResponseRedirect(reverse('master:posts'))   
 
     def put(self, request, *args, **kwargs):
-        if 'Add' in kwargs.get('permission'):
             parentId = kwargs.get('parentId', None)
             postId = kwargs.get('postId', None)
             action = {}
@@ -558,50 +628,71 @@ class Post(TemplateView):
 
 @RoleRequired('Posts')
 class Excel(TemplateView):
-    template_name = 'master/excel.html'
+
+    def __init__(self, *args, **kwargs):
+        self.template_name = 'master/excel.html'
+        super().__init__(*args, **kwargs)
+
+    def dispatch(self, request, *args, **kwargs):
+        if 'View' not in kwargs.get('permission'):
+           self.template_name = 'master/401.html'  
+        return super().dispatch(request, *args, **kwargs) 
+
+
     def get(self, request, *args, **kwargs):
         return self.render_to_response(self.get_context_data())
-    def post(self, request, *args, **kwargs):
-        file = request.FILES['files']
-        df = pd.read_excel(file)
-        data_array = df.to_dict(orient="records")
-        for row in data_array:  
-            if Posts.objects.filter(name=row.get('name', '')).exists():
-                update = Posts.objects.filter(name=row.get('name', '')).first()
-                if update:
-                    update.image = row.get('image', '')
-                    update.rate = row.get('rate', '')
-                    update.size = row.get('size', '')
-                    update.genre = row.get('genre', '')
-                    update.lang = row.get('lang', '')
-                    update.status = row.get('status', '')
-                    update.starcast = row.get('starcast', '')
-                    update.story = row.get('story', '')
-                    update.menu = row.get('menu', '')
-                    update.duration=row.get('duration', '')
-                    update.release_date = row.get('release_date', None)
-                    update.save()
-            else:
-                Posts.objects.create(
-                    name=row.get('name', ''),
-                    image=row.get('image', ''),
-                    rate=row.get('rate', ''),
-                    size=row.get('size', ''),
-                    genre=row.get('genre', ''),
-                    lang=row.get('lang', ''),
-                    status=row.get('status', ''),
-                    starcast=row.get('starcast', ''),
-                    story=row.get('story', ''),
-                    menu=row.get('menu', ''),
-                    duration=row.get('duration', ''),
-                    release_date=row.get('release_date', None)
-                )
-        return HttpResponseRedirect(reverse('master:excel')) 
     
+    def post(self, request, *args, **kwargs):
+        if 'Edit' in kwargs.get('permission') and 'Add' in kwargs.get('permission'):
+            file = request.FILES['files']
+            df = pd.read_excel(file)
+            data_array = df.to_dict(orient="records")
+            for row in data_array:  
+                if Posts.objects.filter(name=row.get('name', '')).exists():
+                    update = Posts.objects.filter(name=row.get('name', '')).first()
+                    if update:
+                        update.image = row.get('image', '')
+                        update.rate = row.get('rate', '')
+                        update.size = row.get('size', '')
+                        update.genre = row.get('genre', '')
+                        update.lang = row.get('lang', '')
+                        update.status = row.get('status', '')
+                        update.starcast = row.get('starcast', '')
+                        update.story = row.get('story', '')
+                        update.menu = row.get('menu', '')
+                        update.duration=row.get('duration', '')
+                        update.release_date = row.get('release_date', None)
+                        update.save()
+                else:
+                    Posts.objects.create(
+                        name=row.get('name', ''),
+                        image=row.get('image', ''),
+                        rate=row.get('rate', ''),
+                        size=row.get('size', ''),
+                        genre=row.get('genre', ''),
+                        lang=row.get('lang', ''),
+                        status=row.get('status', ''),
+                        starcast=row.get('starcast', ''),
+                        story=row.get('story', ''),
+                        menu=row.get('menu', ''),
+                        duration=row.get('duration', ''),
+                        release_date=row.get('release_date', None)
+                    )
+            return HttpResponseRedirect(reverse('master:excel')) 
+        
 
 @RoleRequired('Menu')
 class Menus(TemplateView):
-    template_name = 'master/menu.html'
+
+    def __init__(self, *args, **kwargs):
+        self.template_name = 'master/menu.html'
+        super().__init__(*args, **kwargs)
+
+    def dispatch(self, request, *args, **kwargs):
+        if 'View' not in kwargs.get('permission'):
+           self.template_name = 'master/401.html'  
+        return super().dispatch(request, *args, **kwargs) 
+        
     def get(self, request, *args, **kwargs):
         parentId = kwargs.get('parentId', None)
         menuId = kwargs.get('menuId', None)
@@ -661,7 +752,6 @@ class Menus(TemplateView):
         return HttpResponseRedirect(reverse('master:menus'))  
    
     def put(self, request, *args, **kwargs):
-        if 'Add' in kwargs.get('permission'):
             data = json.loads(request.body)
             parentId = kwargs.get('parentId', None)
             start = int(data.get('start', 1))

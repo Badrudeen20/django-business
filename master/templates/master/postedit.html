@@ -123,7 +123,11 @@
 <script> 
     
     $(document).ready(function () {
-        links = {{post.link|safe}}
+        let links = null;
+        {% if post %}
+            links = {{post.link|safe}} 
+        {% endif %}    
+        
         var $repeater = $('.repeater').repeater({
             initEmpty: (links)?true:false,
             show: function () {
