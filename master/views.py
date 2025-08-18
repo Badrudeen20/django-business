@@ -6,6 +6,7 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User 
+from django.db.models import OuterRef,Exists
 from django.views import View
 from django.http import JsonResponse
 from django.core.serializers.json import DjangoJSONEncoder
@@ -340,8 +341,9 @@ class Client(TemplateView):
             clientIds = self.clients(kwargs.get('authId'),kwargs.get('isAdmin'))
             if userId in clientIds or User.objects.filter(access__isnull=True,id=userId).exists():
                self.template_name = 'master/useredit.html'
-               roles = Access.objects.filter(user_id=kwargs.get('authId')).all()
-               
+               roles = Access.objects.filter(user_id=kwargs.get('authId')).annotate(
+                       checked=Exists(Access.objects.filter(user_id=userId,role_id=OuterRef('role_id')))
+                       ).all()
                return self.render_to_response(self.get_context_data(roles=roles))
             else:
                return HttpResponseRedirect(reverse('master:users'))
@@ -405,6 +407,8 @@ class Client(TemplateView):
                          role_id = r.id,
                          given_id = kwargs.get('authId')
                          )
+                   elif Access.objects.filter(user_id=userId,role_id=r.id).exists():
+                        Access.objects.filter(user_id=userId,role_id=r.id).delete()
                return HttpResponseRedirect(reverse('master:user', args=[userId])) 
             else:
                 return HttpResponseRedirect(reverse('master:users')) 

@@ -23,7 +23,7 @@
                                     <tr>
                                           <th scope="row">{{forloop.counter}}</th>
                                           <td>{{t.role.name}}</td>
-                                          <td><input type="checkbox" name="{{t.role.name}}" {% if t.assign %}checked{% endif %} value="{{t.role_id}}" class="form-check-input" /></td>
+                                          <td><input type="checkbox" name="{{t.role.name}}" {% if t.checked %}checked{% endif %} value="{{t.role_id}}" class="form-check-input" /></td>
                                     </tr>
                               {% endfor %}
                               
