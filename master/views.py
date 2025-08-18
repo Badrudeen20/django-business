@@ -14,7 +14,10 @@ from django.contrib import messages
 from master.models import *
 from user.models import *
 from django.conf import settings
+import pandas as pd
 import json
+
+
 from master.decorators import (
    RoleRequired
 )
@@ -93,8 +96,6 @@ class Signup(TemplateView):
             return HttpResponseRedirect(reverse('master:signup'))
 
         
-
-
 class Logout(View):
     def get(self, request):
         logout(request)
@@ -151,7 +152,6 @@ class Permissions(TemplateView):
             endIndex = startIndex + int(length)
             listData = []
             roles = kwargs.get('roleIds')
-            print(roles)
             if search :
                   data = Role.objects.filter(name__icontains=search,id__in=roles)[startIndex:endIndex].all()
                   totalLen = list(Role.objects.filter(name__icontains=search,id__in=roles).all())
@@ -367,7 +367,7 @@ class Post(TemplateView):
                 action['add'] = f'<a class="btn btn-primary" href="{settings.BASE_URL}master/website/post/create/{parentId}">Add</a>'
             else:
                 action['add'] = f'<a class="btn btn-primary" href="{settings.BASE_URL}master/website/post/create">Add</a>'
-                action['excel'] = f'<a class="btn btn-info" href="{settings.BASE_URL}master/website/post/excel">Excel</a>'
+                action['excel'] = f'<a class="btn btn-info" href="{settings.BASE_URL}master/website/excel">Excel</a>'
             if postId=='create':
                self.template_name = "master/postedit.html"
                if parentId and not Posts.objects.filter(id=parentId,type=2).exists():
@@ -389,18 +389,22 @@ class Post(TemplateView):
         postId = kwargs.get('postId', None)
         if postId=='create' and 'Add' in kwargs.get('permission'):
                 post = request.POST
+                links = []
+                for key, value in request.POST.items():
+                    if key.startswith("link[") and key.endswith("][url]"):
+                        links.append({"url": value})
+               
                 Posts.objects.create(
                     name=post.get('name', ''),
                     image=post.get('image', ''),
                     rate=post.get('rate', ''),
                     size=post.get('size', ''),
-                    type=post.get('type', ''),
                     genre=post.get('genre', ''),
                     lang=post.get('lang', ''),
                     status=post.get('status', ''),
                     starcast=post.get('starcast', ''),
                     story=post.get('story', ''),
-                    link=post.get('link', ''),
+                    link=links,
                     menu=post.get('menu', ''),
                     parent=parentId,
                     duration=post.get('duration', ''),
@@ -409,6 +413,11 @@ class Post(TemplateView):
                 return HttpResponseRedirect(reverse('master:posts')) 
         elif int(postId) and 'Edit' in kwargs.get('permission'):
                 post = request.POST
+                links = []
+                item = {}
+                for key, value in request.POST.items():
+                    if key.startswith("link[") and key.endswith("][url]"):
+                        links.append({"url": value})
                 if parentId:
                     update = Posts.objects.filter(parent=parentId,id=postId).first()
                 else:
@@ -422,7 +431,7 @@ class Post(TemplateView):
                     update.status = post.get('status', '')
                     update.starcast = post.get('starcast', '')
                     update.story = post.get('story', '')
-                    update.link = post.get('link', '')
+                    update.link = links
                     update.menu = post.get('menu', '')
                     update.duration=post.get('duration', '')
                     update.release_date = post.get('release_date', '')
@@ -545,6 +554,50 @@ class Post(TemplateView):
                     "status": True,
                     "msg":"Item delete successfully!"
             }, status=200)
+
+
+@RoleRequired('Posts')
+class Excel(TemplateView):
+    template_name = 'master/excel.html'
+    def get(self, request, *args, **kwargs):
+        return self.render_to_response(self.get_context_data())
+    def post(self, request, *args, **kwargs):
+        file = request.FILES['files']
+        df = pd.read_excel(file)
+        data_array = df.to_dict(orient="records")
+        for row in data_array:  
+            if Posts.objects.filter(name=row.get('name', '')).exists():
+                update = Posts.objects.filter(name=row.get('name', '')).first()
+                if update:
+                    update.image = row.get('image', '')
+                    update.rate = row.get('rate', '')
+                    update.size = row.get('size', '')
+                    update.genre = row.get('genre', '')
+                    update.lang = row.get('lang', '')
+                    update.status = row.get('status', '')
+                    update.starcast = row.get('starcast', '')
+                    update.story = row.get('story', '')
+                    update.menu = row.get('menu', '')
+                    update.duration=row.get('duration', '')
+                    update.release_date = row.get('release_date', None)
+                    update.save()
+            else:
+                Posts.objects.create(
+                    name=row.get('name', ''),
+                    image=row.get('image', ''),
+                    rate=row.get('rate', ''),
+                    size=row.get('size', ''),
+                    genre=row.get('genre', ''),
+                    lang=row.get('lang', ''),
+                    status=row.get('status', ''),
+                    starcast=row.get('starcast', ''),
+                    story=row.get('story', ''),
+                    menu=row.get('menu', ''),
+                    duration=row.get('duration', ''),
+                    release_date=row.get('release_date', None)
+                )
+        return HttpResponseRedirect(reverse('master:excel')) 
+    
 
 @RoleRequired('Menu')
 class Menus(TemplateView):

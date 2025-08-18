@@ -13,7 +13,7 @@ class Posts(models.Model):
     lang = models.TextField()
     genre = models.TextField()
     story = models.TextField()
-    link = models.CharField(max_length=100)
+    link = models.JSONField(default=list)
     type = models.IntegerField(choices=FILE_TYPE_CHOICES, default=1)
     duration=models.TextField(null=True, blank=True)
     more = models.TextField()
@@ -41,9 +41,7 @@ class Menu(models.Model):
 class Comments(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='comments')
     post = models.ForeignKey(Posts, on_delete=models.CASCADE, related_name='comments')
-    #user =  models.OneToOneField(Customer, on_delete=models.CASCADE,related_name='customer')
     msg = models.TextField(blank=True, null=True)
-    #post = models.OneToOneField(Posts, on_delete=models.CASCADE,related_name='post')
     parentId = models.CharField(max_length=100,null=True)
     status = models.CharField(max_length=100,default='0')
     created_at = models.DateField(auto_now_add=True)

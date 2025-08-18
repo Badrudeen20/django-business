@@ -3,8 +3,8 @@
 
 
 {% block content %}
-<div class="container d-flex justify-content-center">
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.repeater/1.2.1/jquery.repeater.min.js"></script>
 <div class="container mt-2">
 
     <form class="row" method="post">
@@ -45,27 +45,25 @@
                       <input type="text" class="form-control" name="genre" id="genre" value="{{post.genre}}"  placeholder="Enter genre">
                   </div>
               </div>
-              <div class="col-sm-6">
-                  <div class="form-group">
-                      <label for="link">Link</label>
-                      <input type="text" class="form-control" name="link" id="link" value="{{post.link}}"  placeholder="Enter link">
-                  </div>
-              </div>
+             
+
               <div class="col-sm-6">
                   <div class="form-group">
                       <label for="starcast">Star Cast</label>
                       <input type="text" class="form-control" name="starcast" id="starcast" value="{{post.starcast}}"  placeholder="Enter star cast">
                   </div>
               </div>
+              <!--
               <div class="col-sm-6">
                   <div class="form-group">
-                      <label for="genre">Type</label>
-                      <select class="form-control" name="type">
+                    <label for="genre">Type</label>
+                    <select class="form-control" name="type">
                         <option value="1" {% if post.type == 1 %}selected{% endif %}>File</option>
                         <option value="2" {% if post.type == 2 %}selected{% endif %}>Folder</option>
                     </select>
                   </div>
               </div>
+              -->
               <div class="col-sm-6">
                   <div class="form-group d-flex mt-4">
                       <input  class="form-check" type="checkbox" name="status" {% if post.status %}checked{% endif %}  value="1" />
@@ -97,9 +95,21 @@
                      <textarea class="form-control" value="" name="story" id="story">{{post.story}}</textarea>
                   </div>
               </div>
+              <div class="repeater col-sm-6">
+                  <div data-repeater-list="link">
+                    <div class="form-group" data-repeater-item>
+                      <label for="link">Link</label>
+                      <div class="d-flex">
+                        <input type="text" class="form-control" name="url" id="link" value="{{post.link}}"  placeholder="Enter link">
+                        <button data-repeater-delete class="btn btn-danger" type="button"><i class='bx bx-trash delete-icon'></i></button>
+                      </div>
+                    </div>
+                  </div>
+                  <button data-repeater-create class="btn btn-success" type="button"><i class='bx bx-plus-circle'></i></button>
+              </div>
               <div class="col-sm-12">
                   <div class="form-group mt-2">
-                        <button class="btn btn-primary">Submit</button>
+                        <button class="btn btn-primary" type="submit">Submit</button>
                   </div>
               </div>
 
@@ -107,7 +117,27 @@
      
 
     </form>
-  
+
 </div>
 
+<script> 
+    
+    $(document).ready(function () {
+        links = {{post.link|safe}}
+        var $repeater = $('.repeater').repeater({
+            initEmpty: (links)?true:false,
+            show: function () {
+                $(this).slideDown();
+            },
+            hide: function (deleteElement) {
+                $(this).slideUp(deleteElement);
+            }
+        });
+        $(".repeater [data-repeater-item]:first button").hide();
+        if(links){
+            $repeater.setList(links);
+        }
+        
+    });
+</script>
 {% endblock %}

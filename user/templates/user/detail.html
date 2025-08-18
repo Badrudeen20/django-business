@@ -37,17 +37,17 @@
                 <ul class="list-group list-group-flush">
                   <li class="list-group-item"><strong>Rate:</strong><span class="mx-2">{{post.rate}}</span></li>
                   <li class="list-group-item"><strong>Genre:</strong><span class="mx-2">{{post.genre}}</span></li>
+                  <li class="list-group-item"><strong>Duration:</strong><span class="mx-2">{{post.duration}}</span></li>
+                  <li class="list-group-item"><strong>Star Cast:</strong><span class="mx-2">{{post.starcast}}</span></li>
                   <li class="list-group-item"><strong>Language:</strong><span class="mx-2">{{post.lang}}</span></li>
+                  <li class="list-group-item"><strong>Release Date:</strong><span class="mx-2">{{post.release_date}}</span></li>
                   <li class="list-group-item"><strong>Film Story:</strong><span class="mx-2">{{post.story}}</span></li>
                   <li class="list-group-item d-flex justify-content-center">
                     <img class="card-img-top" style="max-width:800px" src="https://1.bp.blogspot.com/-t77W_ET6W9E/YM1zuddffgI/AAAAAAAAAXw/TE8_B96aTEMivVHjHYuS39yKxDCnwEL2gCLcBGAsYHQ/s2048/onward%2Bscr.png" alt="Card image cap">
                   </li>
                 </ul>
 
-                <div class="card-body d-flex justify-content-center">
-                  <a href="#" class="btn btn-primary mx-2">Donload 480P</a>
-                  <a href="#" class="btn btn-info mx-2">Donload 780P</a>
-                </div>
+                <div class="card-body row" id="link-container"></div>
             </div>
 
           </div>
@@ -109,51 +109,15 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.0/jquery.min.js"></script>
 <script>
   $(document).ready(function(){
-      loadData()
-     
-  })
-  function loadData(parentId=''){
-      let url = baseUrl+"/detail/{{ link }}"
-      $.ajax({
-          url: url+"/"+parentId,
-          method:"PUT",
-          headers: {'X-CSRFToken': csrftoken},
-      }).then ( function( json, textStatus, jqXHR ) {
-          if(json.success && json.isComment){
-            if(json.parentId){
-              $('#li-'+parentId).html(json.comment)
-            }else{
-              $('#comments').html(json.comment)
-            }
-            $('.replay').hide()
-          }  
-      });
-  }
-  
-  function onReplay(parentId){
-    $('.replay').hide()
-    $('#replay-'+parentId).toggle()
-  }
-  
-  function sendComment(commentId=''){
+    const links = {{post.link|safe}}
+    links.forEach(function(ele){
+        console.log(ele)
+        $('#link-container').append(`<a href="${ele.url}" class="btn btn-primary col-12 my-2" >Download E1-E4 480P</a>`)
+    })
       
-      {% with request.session.customer as customer %}
-        {% if customer %}
-          let msg = $('#replay-'+commentId).find('textarea').val()
-          $.ajax({
-              url: baseUrl+"/detail/{{ link }}/"+commentId,
-              method:"POST",
-              headers: {'X-CSRFToken': csrftoken},
-              data:{msg:msg}
-          }).then ( function( json, textStatus, jqXHR ) { 
-             $('textarea[name=replay]').val('')
-             loadData(commentId) 
-          });
-        {% endif %}
-      {% endwith %}
+  })
 
-  }
-  
+
 </script>
 
 

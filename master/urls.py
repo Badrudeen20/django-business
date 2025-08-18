@@ -1,6 +1,6 @@
 from django.urls import path
 # from . import views
-from .views import Dashboard,Modules,Client,Permissions,Sidebar,Post,Menus,Signin,Signup,Logout
+from .views import Dashboard,Modules,Client,Permissions,Sidebar,Post,Excel,Menus,Signin,Signup,Logout
 
 
 app_name = 'master'
@@ -17,11 +17,11 @@ urlpatterns=[
   path('administration/permissions/', Permissions.as_view(),name="permissions"),
   path('administration/permission/<int:role>',Permissions.as_view(),name="permission"),
 
-  path('website/posts/', Post.as_view(),name="post"),
+  path('website/posts/', Post.as_view(),name="posts"),
   path('website/posts/<str:parentId>',Post.as_view(),name="posts"),
   path('website/post/<str:postId>',Post.as_view(),name="post"),
   path('website/post/<str:postId>/<str:parentId>',Post.as_view(),name="post"),
-
+  path('website/excel',Excel.as_view(),name="excel"),
 
   path('website/menus/', Menus.as_view(),name="menus"),
   path('website/menus/<int:parentId>',Menus.as_view(),name="menus"),
