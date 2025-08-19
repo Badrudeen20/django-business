@@ -45,6 +45,7 @@ class Home(TemplateView):
                 Link = " ".join(linkList)
                 parent = Posts.objects.filter(name=Link,status=1).first()
                 Link = parent.id
+  
         if search:
             data = Posts.objects.filter(query,Q(parent=Link),Q(release_date__year__gte=start_year),Q(release_date__year__lte=end_year),rate__range=(min_rate, max_rate),name__icontains=search,status=1)[startIndex:endIndex]
             totalLen = Posts.objects.filter(query,Q(parent=Link),Q(release_date__year__gte=start_year),Q(release_date__year__lte=end_year),rate__range=(min_rate, max_rate),name__icontains=search,status=1).count()
@@ -72,7 +73,6 @@ class Home(TemplateView):
         }, status=200)
         
 
-   
 class Login(TemplateView):
 
     template_name = 'user/login.html'
@@ -93,7 +93,8 @@ class Register(TemplateView):
     def post(self, request, *args, **kwargs):
         data = json.loads(request.body.decode('utf-8'))
         return JsonResponse({'message': 'POST received', 'data': data})
-    
+
+
 class Category(TemplateView):
     template_name = 'user/home.html'
     def get(self, request, *args, **kwargs):
@@ -196,7 +197,8 @@ class Detail(TemplateView):
       def put(self, request, *args, **kwargs):
         Link = kwargs.get('Link', None)
         return JsonResponse({"status":True,"Menus":Link})
-      
+
+
 class Trand(View):
     def get(self, request, *args, **kwargs):
         trands =  Posts.objects.filter(trand=1,status=1).values()

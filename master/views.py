@@ -16,6 +16,9 @@ from django.contrib import messages
 from master.models import *
 from user.models import *
 from django.conf import settings
+from django.contrib.auth.decorators import login_required
+from django.utils.decorators import method_decorator
+from django.contrib.auth.mixins import LoginRequiredMixin
 import pandas as pd
 import json
 from master.decorators import (
@@ -40,6 +43,7 @@ class Signin(TemplateView):
                         'is_admin':user.is_superuser
                 }, cls=DjangoJSONEncoder)
             )
+            return redirect('master:dashboard')
         return self.render_to_response(self.get_context_data(form=form))
 
         
@@ -120,7 +124,17 @@ class Logout(View):
         request.session.flush()
         return HttpResponseRedirect(reverse('master:signin'))
 
+"""
+class Dashboard(LoginRequiredMixin, TemplateView):
+    template_name = 'master/dashboard.html'
+    login_url = '/login/'          
+    redirect_field_name = 'next'   
 
+    def get(self, request, *args, **kwargs):
+        return self.render_to_response(self.get_context_data())
+"""
+
+# @method_decorator(login_required(login_url='/master/signin/'), name='dispatch')
 class Dashboard(TemplateView):
     template_name = 'master/dashboard.html'
     def get(self, request, *args, **kwargs):
