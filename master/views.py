@@ -11,14 +11,13 @@ from django.views import View
 from django.http import JsonResponse
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db.models import Q
+from .forms import RegisterForm, LoginForm, MenuForm, PostForm
 from django.contrib import messages
 from master.models import *
 from user.models import *
 from django.conf import settings
 import pandas as pd
 import json
-
-
 from master.decorators import (
    RoleRequired
 )
@@ -29,9 +28,22 @@ class Signin(TemplateView):
         return self.render_to_response(self.get_context_data())
 
     def post(self, request, *args, **kwargs):
-        user = request.POST['user']
-        password = request.POST['password']
-        user_obj = User.objects.using('default').filter(Q(username=user) | Q(email=user)).first()
+        form = LoginForm(request.POST)
+        if form.is_valid():
+            user = form.cleaned_data["user"]
+            login(request, user)
+            request.session['master'] = json.loads(
+                json.dumps({
+                        'id': user.id,
+                        'username': user.username,
+                        'email': user.email,
+                        'is_admin':user.is_superuser
+                }, cls=DjangoJSONEncoder)
+            )
+        return self.render_to_response(self.get_context_data(form=form))
+
+        
+        """
 
         if user_obj:
             username = user_obj.username
@@ -56,13 +68,12 @@ class Signin(TemplateView):
                     "data":"Login Successfully!"
                 }, status=200) 
         else:
-       
+    
             return JsonResponse({
                 "success": False,
                 "data":"Invalid User!"
             }, status=200) 
-        
-        """
+
         if user_obj:
             username = user_obj.username
             user = authenticate(username=username , password=password)
@@ -81,22 +92,28 @@ class Signup(TemplateView):
         return self.render_to_response(self.get_context_data())
 
     def post(self, request, *args, **kwargs):
-        email = request.POST['email']
-        username = request.POST['username']
-        password = request.POST['password']
-        if User.objects.filter(email=email).exists():
-            messages.error(request, "Email already exists. Please log in or use another email.")
-            return HttpResponseRedirect(reverse('master:signup'))
-        try:
-            user = User(email=email, username=username)
-            user.set_password(password)
-            user.save()
-            return redirect('master:signin')
-        except Exception as e:
-            messages.error(request, e)
-            return HttpResponseRedirect(reverse('master:signup'))
+        form = RegisterForm(request.POST)
 
-        
+        if form.is_valid():
+           
+            try:
+                # user = User.objects.create_user(
+                #     username=form.cleaned_data["username"],
+                #     email=form.cleaned_data["email"],
+                #     password=form.cleaned_data["password"]
+                # )
+                # login(request, user)
+                form.save()
+                messages.success(request, "Account created successfully! Please log in.")
+                return redirect('master:signin')
+            except Exception as e:
+                messages.error(request, e)
+                return HttpResponseRedirect(reverse('master:signup'))
+        else:
+            messages.error(request, "Please correct the errors below.")   
+        return self.render_to_response(self.get_context_data(form=form))
+
+
 class Logout(View):
     def get(self, request):
         logout(request)
@@ -460,61 +477,82 @@ class Post(TemplateView):
         return self.render_to_response(self.get_context_data(action=action))
 
     def post(self, request, *args, **kwargs):
+        form = PostForm(request.POST)
         parentId = kwargs.get('parentId', None)
         postId = kwargs.get('postId', None)
-        if postId=='create' and 'Add' in kwargs.get('permission'):
-                post = request.POST
-                links = []
-                for key, value in request.POST.items():
-                    if key.startswith("link[") and key.endswith("][url]"):
-                        links.append({"url": value})
-               
-                Posts.objects.create(
-                    name=post.get('name', ''),
-                    image=post.get('image', ''),
-                    rate=post.get('rate', ''),
-                    size=post.get('size', ''),
-                    genre=post.get('genre', ''),
-                    lang=post.get('lang', ''),
-                    status=post.get('status', ''),
-                    starcast=post.get('starcast', ''),
-                    story=post.get('story', ''),
-                    link=links,
-                    menu=post.get('menu', ''),
-                    parent=parentId,
-                    duration=post.get('duration', ''),
-                    release_date=post.get('release_date', '')
-                )
-                return HttpResponseRedirect(reverse('master:posts')) 
-        elif int(postId) and 'Edit' in kwargs.get('permission'):
-                post = request.POST
-                links = []
-                item = {}
-                for key, value in request.POST.items():
-                    if key.startswith("link[") and key.endswith("][url]"):
-                        links.append({"url": value})
-                if parentId:
-                    update = Posts.objects.filter(parent=parentId,id=postId).first()
-                else:
-                    update = Posts.objects.filter(id=postId).first()
-                if update:
-                    update.image = post.get('image', '')
-                    update.rate = post.get('rate', '')
-                    update.size = post.get('size', '')
-                    update.genre = post.get('genre', '')
-                    update.lang = post.get('lang', '')
-                    update.status = post.get('status', '')
-                    update.starcast = post.get('starcast', '')
-                    update.story = post.get('story', '')
-                    update.link = links
-                    update.menu = post.get('menu', '')
-                    update.duration=post.get('duration', '')
-                    update.release_date = post.get('release_date', '')
-                    update.save()
+        if form.is_valid():
+            if postId=='create' and 'Add' in kwargs.get('permission'):
+                    post = request.POST
+                    links = []
+                    obj = {}
+                    for key, value in request.POST.items(): 
+                        if key.startswith("link[") and key.endswith("][url]"):
+                            obj['url'] = value
+                            
+                        if key.startswith("link[") and key.endswith("][download]"):
+                            obj['download'] = value
+
+                        if 'url' in obj and 'download' in obj:
+                           links.append(obj)
+                           obj = {}
+                    
+                    Posts.objects.create(
+                        name=post.get('name', ''),
+                        image=post.get('image', ''),
+                        rate=post.get('rate', ''),
+                        size=post.get('size', ''),
+                        genre=post.get('genre', ''),
+                        lang=post.get('lang', ''),
+                        status=post.get('status', ''),
+                        starcast=post.get('starcast', ''),
+                        story=post.get('story', ''),
+                        link=links,
+                        menu=post.get('menu', ''),
+                        parent=parentId,
+                        duration=post.get('duration', ''),
+                        release_date=post.get('release_date', '')
+                    )
+                    return HttpResponseRedirect(reverse('master:posts')) 
+            elif int(postId) and 'Edit' in kwargs.get('permission'):
+                    post = request.POST
+                    links = []
+                    obj = {}
+                    for key, value in request.POST.items(): 
+                        if key.startswith("link[") and key.endswith("][url]"):
+                            obj['url'] = value
+                            
+                        if key.startswith("link[") and key.endswith("][download]"):
+                            obj['download'] = value
+
+                        if 'url' in obj and 'download' in obj:
+                           links.append(obj)
+                           obj = {}
+
                     if parentId:
-                        return HttpResponseRedirect(reverse('master:post', args=[postId, parentId]))
-                    return HttpResponseRedirect(reverse('master:post', args=[postId]))
-        return HttpResponseRedirect(reverse('master:posts'))   
+                        update = Posts.objects.filter(parent=parentId,id=postId).first()
+                    else:
+                        update = Posts.objects.filter(id=postId).first()
+                    if update:
+                        update.image = post.get('image', '')
+                        update.rate = post.get('rate', '')
+                        update.size = post.get('size', '')
+                        update.genre = post.get('genre', '')
+                        update.lang = post.get('lang', '')
+                        update.status = post.get('status', '')
+                        update.starcast = post.get('starcast', '')
+                        update.story = post.get('story', '')
+                        update.link = links
+                        update.menu = post.get('menu', '')
+                        update.duration=post.get('duration', '')
+                        update.release_date = post.get('release_date', '')
+                        update.save()
+                        if parentId:
+                            return HttpResponseRedirect(reverse('master:post', args=[postId, parentId]))
+                        return HttpResponseRedirect(reverse('master:post', args=[postId]))
+            return HttpResponseRedirect(reverse('master:posts'))   
+        else:
+            self.template_name = 'master/postedit.html'
+            return self.render_to_response(self.get_context_data(form=form))
 
     def put(self, request, *args, **kwargs):
             parentId = kwargs.get('parentId', None)
@@ -729,31 +767,37 @@ class Menus(TemplateView):
         return self.render_to_response(self.get_context_data(action=action))
 
     def post(self, request, *args, **kwargs):
+        form = MenuForm(request.POST)
         parentId = kwargs.get('parentId', None)
         menuId = kwargs.get('menuId', None)
-        action = {}
-        if menuId =='create' and 'Add' in kwargs.get('permission'):
-                Menu.objects.create(
-                name=request.POST['menu'], 
-                link=request.POST['link'],
-                type=request.POST['type'],
-                menuId=parentId,
-                status=1
-                )
-                return HttpResponseRedirect(reverse('master:menus')) 
-        elif int(menuId) and 'Edit' in kwargs.get('permission'):
-                if parentId:
-                    update = Menu.objects.filter(menuId=parentId,id=menuId).first()
-                else:
-                    update = Menu.objects.filter(id=menuId).first()
-                if update:
-                    update.name = request.POST['menu']
-                    update.link = request.POST['link']
-                    update.save()
+        
+        if form.is_valid():
+            if menuId =='create' and 'Add' in kwargs.get('permission'):
+                    Menu.objects.create(
+                    name=request.POST['menu'], 
+                    link=request.POST['link'],
+                    type=request.POST['type'],
+                    menuId=parentId,
+                    status=1
+                    )
+                    return HttpResponseRedirect(reverse('master:menus')) 
+            elif int(menuId) and 'Edit' in kwargs.get('permission'):
                     if parentId:
-                        return HttpResponseRedirect(reverse('master:menu', args=[menuId, parentId]))
-                    return HttpResponseRedirect(reverse('master:menu', args=[menuId]))
-        return HttpResponseRedirect(reverse('master:menus'))  
+                        update = Menu.objects.filter(menuId=parentId,id=menuId).first()
+                    else:
+                        update = Menu.objects.filter(id=menuId).first()
+                    if update:
+                        update.name = request.POST['menu']
+                        update.link = request.POST['link']
+                        update.save()
+                        if parentId:
+                            return HttpResponseRedirect(reverse('master:menu', args=[menuId, parentId]))
+                        return HttpResponseRedirect(reverse('master:menu', args=[menuId]))
+            return HttpResponseRedirect(reverse('master:menus'))  
+        else:
+            self.template_name = 'master/menuedit.html'
+            return self.render_to_response(self.get_context_data(form=form))
+        
    
     def put(self, request, *args, **kwargs):
             data = json.loads(request.body)

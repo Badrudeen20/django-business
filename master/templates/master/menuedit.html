@@ -13,6 +13,9 @@
                 <div class="form-group">
                     <label class="form-label" for="menu">Name</label>
                     <input class="form-control" name="menu" id="menu" value="{{menu.name}}" placeholder="Menu name" />
+                    {% if form.menu.errors %}
+                        <div class="alert alert-danger">{{ form.menu.errors.0 }}</div>
+                    {% endif %}
                 </div>
               </div>
               <div class="col-sm-6">
@@ -22,12 +25,18 @@
                         <option value="1" {% if menu.type == 1 %}selected{% endif %}>File</option>
                         <option value="2" {% if menu.type == 2 %}selected{% endif %}>Folder</option>
                     </select>
+                    {% if form.type.errors %}
+                        <div class="alert alert-danger">{{ form.type.errors.0 }}</div>
+                    {% endif %}
                 </div>
               </div>
               <div class="col-sm-6">
                 <div class="form-group">
                     <label class="form-label" for="link">Link</label>
                     <input class="form-control" name="link" id="link" value="{{menu.link}}" placeholder="link" />
+                    {% if form.link.errors %}
+                        <div class="alert alert-danger">{{ form.link.errors.0 }}</div>
+                    {% endif %}
                 </div>
               </div>
               

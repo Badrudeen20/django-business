@@ -13,36 +13,54 @@
                   <div class="form-group">
                       <label for="name">Name</label>
                       <input type="text" class="form-control"  name="name" id="name" value="{{post.name}}"  placeholder="Enter post">
+                      {% if form.name.errors %}
+                        <div class="alert alert-danger">{{ form.name.errors.0 }}</div>
+                      {% endif %}
                   </div>
               </div>
               <div class="col-sm-6">
                   <div class="form-group">
                       <label for="rate">Rate</label>
                       <input type="text" name="rate" class="form-control" id="rate" value="{{post.rate}}"  placeholder="Enter rate">
+                      {% if form.rate.errors %}
+                        <div class="alert alert-danger">{{ form.rate.errors.0 }}</div>
+                      {% endif %}
                   </div>
               </div>
               <div class="col-sm-6">
                   <div class="form-group">
                       <label for="size">Size</label>
                       <input type="text" class="form-control" id="size" name="size"  value="{{post.size}}" placeholder="Enter size">
+                      {% if form.size.errors %}
+                        <div class="alert alert-danger">{{ form.size.errors.0 }}</div>
+                      {% endif %}
                   </div>
               </div>
               <div class="col-sm-6">
                   <div class="form-group">
                       <label for="lang">Language</label>
                       <input type="text" class="form-control" name="lang" id="lang"  value="{{post.lang}}" placeholder="Enter language">
+                      {% if form.lang.errors %}
+                        <div class="alert alert-danger">{{ form.lang.errors.0 }}</div>
+                      {% endif %}
                   </div>
               </div>
               <div class="col-sm-6">
                   <div class="form-group">
                       <label for="image">Image</label>
                       <input type="text" class="form-control" name="image" id="image" value="{{post.image}}"  placeholder="Enter image">
+                      {% if form.image.errors %}
+                        <div class="alert alert-danger">{{ form.image.errors.0 }}</div>
+                      {% endif %}
                   </div>
               </div>
               <div class="col-sm-6">
                   <div class="form-group">
                       <label for="genre">Genre</label>
                       <input type="text" class="form-control" name="genre" id="genre" value="{{post.genre}}"  placeholder="Enter genre">
+                      {% if form.genre.errors %}
+                        <div class="alert alert-danger">{{ form.genre.errors.0 }}</div>
+                      {% endif %}
                   </div>
               </div>
              
@@ -51,6 +69,9 @@
                   <div class="form-group">
                       <label for="starcast">Star Cast</label>
                       <input type="text" class="form-control" name="starcast" id="starcast" value="{{post.starcast}}"  placeholder="Enter star cast">
+                      {% if form.starcast.errors %}
+                        <div class="alert alert-danger">{{ form.starcast.errors.0 }}</div>
+                      {% endif %}
                   </div>
               </div>
               <!--
@@ -75,24 +96,36 @@
                   <div class="form-group">
                       <label for="release_date">Release Date</label>
                       <input  class="form-control" type="date" value="{{ post.release_date|date:'Y-m-d' }}"  name="release_date" />   
+                      {% if form.release_date.errors %}
+                        <div class="alert alert-danger">{{ form.release_date.errors.0 }}</div>
+                      {% endif %}
                   </div>
               </div> 
               <div class="col-sm-6">
                   <div class="form-group">
                       <label for="duration">Duration</label>
                       <input type="text" name="duration" id="duration" value="{{post.duration}}" class="form-control" />
+                      {% if form.duration.errors %}
+                        <div class="alert alert-danger">{{ form.duration.errors.0 }}</div>
+                      {% endif %}
                   </div>
               </div>
               <div class="col-sm-6">
                   <div class="form-group">
                       <label for="menu">Menu Search</label>
-                      <textarea class="form-control" name="menu" id="story">{{post.menu}}</textarea>
+                      <textarea class="form-control" name="menu" id="menu">{{post.menu}}</textarea>
+                      {% if form.menu.errors %}
+                        <div class="alert alert-danger">{{ form.menu.errors.0 }}</div>
+                      {% endif %}
                   </div>
               </div> 
               <div class="col-sm-6">
                   <div class="form-group">
                      <label for="story">Story</label>
                      <textarea class="form-control" value="" name="story" id="story">{{post.story}}</textarea>
+                      {% if form.story.errors %}
+                        <div class="alert alert-danger">{{ form.story.errors.0 }}</div>
+                      {% endif %}
                   </div>
               </div>
               <div class="repeater col-sm-6">
@@ -100,7 +133,8 @@
                     <div class="form-group" data-repeater-item>
                       <label for="link">Link</label>
                       <div class="d-flex">
-                        <input type="text" class="form-control" name="url" id="link" value="{{post.link}}"  placeholder="Enter link">
+                        <input type="text" class="form-control" name="url" id="link"  placeholder="Enter link">
+                        <input type="text" class="form-control" name="download" id="download" placeholder="Enter download">
                         <button data-repeater-delete class="btn btn-danger" type="button"><i class='bx bx-trash delete-icon'></i></button>
                       </div>
                     </div>
@@ -123,11 +157,11 @@
 <script> 
     
     $(document).ready(function () {
-        let links = null;
+        let links = [];
         {% if post %}
             links = {{post.link|safe}} 
         {% endif %}    
-        
+
         var $repeater = $('.repeater').repeater({
             initEmpty: (links)?true:false,
             show: function () {
@@ -138,7 +172,7 @@
             }
         });
         $(".repeater [data-repeater-item]:first button").hide();
-        if(links){
+        if(links.length){
             $repeater.setList(links);
         }
         

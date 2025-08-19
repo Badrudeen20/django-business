@@ -23,7 +23,9 @@ class MasterMiddlewere(object):
             if url.startswith('/master/'):
                 if request.path == '/master/signin' or request.path == '/master/signin/':
                     return self.get_response(request)
-                else: 
+                elif request.path == '/master/signup' or request.path == '/master/signup/': 
+                    return self.get_response(request)
+                else:
                     return redirect('master:signin')
             else:
                 return self.get_response(request)

@@ -105,14 +105,18 @@
  
     </div>
    
-<!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.0/jquery.min.js"></script> -->
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.0/jquery.min.js"></script>
 <script>
   $(document).ready(function(){
-    const links = {{post.link|safe}}
-    links.forEach(function(ele){
+
+    let links = [];
+    {% if post %}
+        links = {{post.link|safe}} 
+    {% endif %} 
+    links?.forEach(function(ele){
         console.log(ele)
-        $('#link-container').append(`<a href="${ele.url}" class="btn btn-primary col-12 my-2" >Download E1-E4 480P</a>`)
+        $('#link-container').append(`<a href="${ele.url}" class="btn btn-primary col-12 my-2" >${ele.download}</a>`)
     })
       
   })
