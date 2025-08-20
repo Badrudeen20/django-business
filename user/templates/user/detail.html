@@ -22,6 +22,9 @@
       border: 1px solid rgba(0, 0, 0, 0.125);
       padding: 0.75rem 1.25rem;
     }
+    .underline-link {
+      text-decoration: underline;
+    }
    </style>
     <div class="container-fluid">
        <div class="row">
@@ -82,7 +85,6 @@
                             </div>
                             <div class="col-7">
                               <div class="card-block">
-                                
                                   {% if t.type == 2 %}                        
                                     <a class="card-text" href="{{baseUrl}}{{t.name|plusify}}">{{t.name}}</a>
                                   {% else %}
@@ -112,11 +114,11 @@
 
     let links = [];
     {% if post %}
-        links = {{post.link|safe}} 
+       links = {{post.link|safe}} 
     {% endif %} 
     links?.forEach(function(ele){
         console.log(ele)
-        $('#link-container').append(`<a href="${ele.url}" class="btn btn-primary col-12 my-2" >${ele.download}</a>`)
+        $('#link-container').append(`<a href="${ele.url}" class="col-12 my-2 text-primary underline-link" >${ele.download}</a>`)
     })
       
   })

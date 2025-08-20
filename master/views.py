@@ -168,22 +168,25 @@ class Permissions(TemplateView):
     def get(self, request, *args, **kwargs):
         roleId = kwargs.get('role', '')
         if roleId and 'Edit' in kwargs.get('permission'):
-            module = Module.objects.all()
-            allow = '<ul class="list-group">'
-            for m in module:
-                  perm = Permission.objects.filter(modules_id=m.id,role_id=roleId).first()
-                  if m.parent_id=='':
-                        allow +=(f'<li class="list-group-item ">'
-                                    f'<div class="w-100 d-flex justify-content-between">'
-                                    f'<div>{m.module}</div>'
-                                    f'<div>View <input type="checkbox" name="{m.module}" value="View" {"checked" if perm else None} class="form-check-input" /> </div>'
-                                    f'</div>'
-                                    f'{self.checkParent(roleId,module,m.id)}'
-                                    f'</li>')   
-            
-            allow +='</ul>'
-            self.template_name = 'master/allowpermission.html'
-            return self.render_to_response(self.get_context_data(permissions=allow))
+            if Role.objects.filter(id=roleId).exists():
+                module = Module.objects.all()
+                allow = '<ul class="list-group">'
+                for m in module:
+                    perm = Permission.objects.filter(modules_id=m.id,role_id=roleId).first()
+                    if m.parent_id=='':
+                            allow +=(f'<li class="list-group-item ">'
+                                        f'<div class="w-100 d-flex justify-content-between">'
+                                        f'<div>{m.module}</div>'
+                                        f'<div>View <input type="checkbox" name="{m.module}" value="View" {"checked" if perm else None} class="form-check-input" /> </div>'
+                                        f'</div>'
+                                        f'{self.checkParent(roleId,module,m.id)}'
+                                        f'</li>')   
+                
+                allow +='</ul>'
+                self.template_name = 'master/allowpermission.html'
+                return self.render_to_response(self.get_context_data(permissions=allow))
+            else:
+                return HttpResponseRedirect(reverse('master:permissions')) 
         else:
             return self.render_to_response(self.get_context_data())
 
@@ -220,17 +223,43 @@ class Permissions(TemplateView):
     
     def post(self, request, *args, **kwargs):
             roleId = kwargs.get('role', '')
-            if roleId and 'Edit' in kwargs.get('permission'):
+            if roleId and 'Edit' in kwargs.get('permission') and Role.objects.filter(id=roleId).exists():
                 module = Module.objects.all()
                 for m in module:
                     perm = Permission.objects.filter(modules_id=m.id,role_id=roleId).first()
-                    if m.parent_id=='':
+
+                    if m.parent_id:
+                            permission = ''
+                            if m.module+'[view]' in request.POST:
+                                permission += request.POST[m.module+'[view]']
+                            if m.module+'[add]' in request.POST:
+                                permission +=','+request.POST[m.module+'[add]']
+                            if m.module+'[edit]' in request.POST:
+                                permission +=','+request.POST[m.module+'[edit]']
+                            if m.module+'[delete]' in request.POST:
+                                permission +=','+request.POST[m.module+'[delete]']
+                                    
+                            if perm:
+                                if permission:
+                                   perm.permission =  permission
+                                   perm.save()
+                                else:
+                                   perm.delete()  
+                            else:
+                                if permission:
+                                   Permission.objects.create(
+                                        permission=permission,
+                                        role_id = roleId,
+                                        modules_id = m.id,
+                                        module_parent_id=m.parent_id
+                                   )
+                    else:
                         if perm:
                             if m.module in request.POST:
-                               perm.permission =  request.POST[m.module]
-                               perm.save()
+                                perm.permission =  request.POST[m.module]
+                                perm.save()
                             else:
-                               perm.delete()
+                                perm.delete()
                         else:
                             if m.module in request.POST:
                                 Permission.objects.create(
@@ -238,32 +267,6 @@ class Permissions(TemplateView):
                                 role_id = roleId,
                                 modules_id = m.id
                                 )
-                    else:
-                        if m.parent_id:
-                              permission = ''
-                              if m.module+'[view]' in request.POST:
-                                    permission += request.POST[m.module+'[view]']
-                              if m.module+'[add]' in request.POST:
-                                    permission +=','+request.POST[m.module+'[add]']
-                              if m.module+'[edit]' in request.POST:
-                                    permission +=','+request.POST[m.module+'[edit]']
-                              if m.module+'[delete]' in request.POST:
-                                    permission +=','+request.POST[m.module+'[delete]']
-                                       
-                              if perm:
-                                if permission:
-                                    perm.permission =  permission
-                                    perm.save()
-                                else:
-                                    perm.delete()  
-                              else:
-                                  if permission:
-                                    Permission.objects.create(
-                                        permission=permission,
-                                        role_id = roleId,
-                                        modules_id = m.id,
-                                        module_parent_id=m.parent_id
-                                    )
                                    
                 return HttpResponseRedirect(reverse('master:permission', args=[roleId]))       
             return redirect(reverse('master:permissions'))
@@ -468,24 +471,26 @@ class Post(TemplateView):
         parentId = kwargs.get('parentId', None)
         postId = kwargs.get('postId', None)
         action = {}
-        if 'Add' in kwargs.get('permission'):
-            if parentId:
-                action['add'] = f'<a class="btn btn-primary" href="{settings.BASE_URL}master/website/post/create/{parentId}">Add</a>'
+        if parentId:
+            if Posts.objects.filter(id=parentId,type=2).exists():
+               action['add'] = f'<a class="btn btn-primary" href="{settings.BASE_URL}master/website/post/create/{parentId}">Add</a>'
             else:
-                action['add'] = f'<a class="btn btn-primary" href="{settings.BASE_URL}master/website/post/create">Add</a>'
-                action['excel'] = f'<a class="btn btn-info" href="{settings.BASE_URL}master/website/excel">Excel</a>'
-            if postId=='create':
-               self.template_name = "master/postedit.html"
-               if parentId and not Posts.objects.filter(id=parentId,type=2).exists():
-                  return HttpResponseRedirect(reverse('master:posts', args=[parentId]))
-               return self.render_to_response(self.get_context_data())    
-              
-            if postId and 'Edit' in kwargs.get('permission'):
-               post = Posts.objects.filter(Q(parent=parentId),id=postId).values().first()
-               if post:
-                  self.template_name = "master/postedit.html"
-                  return self.render_to_response(self.get_context_data(post=post))
                return HttpResponseRedirect(reverse('master:posts')) 
+        else:
+            action['add'] = f'<a class="btn btn-primary" href="{settings.BASE_URL}master/website/post/create">Add</a>'
+            action['excel'] = f'<a class="btn btn-info" href="{settings.BASE_URL}master/website/excel">Excel</a>'
+        if postId=='create':
+            self.template_name = "master/postedit.html"
+            if parentId and not Posts.objects.filter(id=parentId,type=2).exists():
+                return HttpResponseRedirect(reverse('master:posts', args=[parentId]))
+            return self.render_to_response(self.get_context_data())    
+            
+        if postId and 'Edit' in kwargs.get('permission'):
+            post = Posts.objects.filter(Q(parent=parentId),id=postId).values().first()
+            if post:
+                self.template_name = "master/postedit.html"
+                return self.render_to_response(self.get_context_data(post=post))
+            return HttpResponseRedirect(reverse('master:posts')) 
     
 
         return self.render_to_response(self.get_context_data(action=action))

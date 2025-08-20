@@ -23,7 +23,7 @@ Move the base/base into root file and remove the first base folder
 # pip install -r requirements.txt
 
 # python manage.py migrate --database=default
-# DATABASE_ROUTERS = ['db_router.Movieplanet']
+# DATABASE_ROUTERS = ['db_router.Master']
 # python manage.py makemigrations movieplanet
 # python manage.py migrate --database=movieplanet 
 
