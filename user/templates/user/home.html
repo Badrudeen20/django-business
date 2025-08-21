@@ -31,8 +31,8 @@
     <div class="container-fluid">
        <div class="row">
           <div class="col-md-12 col-sm-12 col-lg-8 ">
-            <table id="customer_table"   class="display" style="width:100%">
-              <tbody class="row">
+            <table id="customer_table" class="display w-100">
+              <tbody class="row mx-0">
     
               </tbody>
             </table>
@@ -134,7 +134,7 @@
                               <a class="card-text" href="${url}">${data.name}</a>
                             </div>
                           </article>`
-              $(row).addClass('col-xl-4 col-sm-6 col-xs-6 col-md-6 col-6  my-2 border-0');
+              $(row).addClass('col-xl-4 col-sm-6 col-xs-6 col-md-6 col-6 px-1 py-0 my-2 border-0');
               $(row).html(card);
             },
             ajax: function (data, callback, settings) {
@@ -177,7 +177,10 @@
                 { data: "name" },
                 { data: "rate" },  
             ],
-            initComplete: function () {
+            // headerCallback: function(thead, data, start, end, display) {
+            //     $(thead).remove(); // removes the thead element
+            // },
+            initComplete: function (settings, json) {
                 let genre = (genres) ? genres.split(',').map(item => item.trim()) : []
                 let customBtn = `<div>
                                       <button class="btn btn-info dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -193,7 +196,7 @@
                                         <li>
                                           <div class="dropdown-item">
                                             <label for="genres">Genres</label> 
-                                        `
+                                `
                 let genreList = ['Horror','Action','Sci-fi'];
                 genreList.forEach(function(item){
                     
@@ -278,6 +281,7 @@
                   window.location.href = baseUrl+'?years='+yearSlider.noUiSlider.get()+'&rates='+rateSlider.noUiSlider.get()+'&genres='+genres
                  
                 })
+                $(this.api().table().header()).remove();
 
             }
 

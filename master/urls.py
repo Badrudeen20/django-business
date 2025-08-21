@@ -21,7 +21,8 @@ urlpatterns=[
   path('website/posts/<str:parentId>',Post.as_view(),name="posts"),
   path('website/post/<str:postId>',Post.as_view(),name="post"),
   path('website/post/<str:postId>/<str:parentId>',Post.as_view(),name="post"),
-  path('website/excel',Excel.as_view(),name="excel"),
+  path('website/excel/',Excel.as_view(),name="excel"),
+  path('website/excel/<str:download>',Excel.as_view(),name="sample"),
 
   path('website/menus/', Menus.as_view(),name="menus"),
   path('website/menus/<int:parentId>',Menus.as_view(),name="menus"),

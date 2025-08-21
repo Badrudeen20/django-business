@@ -20,6 +20,8 @@ from django.contrib.auth.decorators import login_required
 from django.utils.decorators import method_decorator
 from django.contrib.auth.mixins import LoginRequiredMixin
 import pandas as pd
+from django.http import FileResponse, Http404
+import os
 import json
 from master.decorators import (
    RoleRequired
@@ -701,7 +703,13 @@ class Excel(TemplateView):
 
 
     def get(self, request, *args, **kwargs):
+        filename = kwargs.get('download', None)
+        if filename =='sample.xlsx':
+           file_path = os.path.join(settings.BASE_DIR, 'static', 'download', filename)
+           if os.path.exists(file_path):
+               return FileResponse(open(file_path, 'rb'), as_attachment=True, filename=filename)
         return self.render_to_response(self.get_context_data())
+    
     
     def post(self, request, *args, **kwargs):
         if 'Edit' in kwargs.get('permission') and 'Add' in kwargs.get('permission'):

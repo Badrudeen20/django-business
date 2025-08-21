@@ -11,7 +11,9 @@
                   <label class="form-label">Upload Excel File</label>
                   <div class="d-flex">
                         <input type="file" name="files" class="form-control" accept=".xls,.xlsx,.csv" />
-                        <button type="submit" class="btn btn-primary">Upload</button>
+                        <button type="submit" class="btn btn-primary mx-1"><i class='bx bx-upload upload-icon'></i></button>
+                        <a href="{{ settings.BASE_URL }}sample.xlsx" class="btn btn-success">
+                              <i class='bx bx-download download-icon'></i></a>
                   </div>
 
             </div>
